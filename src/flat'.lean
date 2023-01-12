@@ -15,15 +15,15 @@ variables (R : Type u) [comm_ring R]
 variables (M : Type u) [add_comm_group M] [module R M]
 
 /--
-A module `M` is flat iff for any injective liear map `L : N ⟶ N'`, the induced
+A module `M` is flat iff for any injective linear map `L : N ⟶ N'`, the induced
 map `N ⊗ M ⟶ N' ⊗ M` is also injective
 -/
 def flat' : Prop := ∀ ⦃N N' : Module R⦄ (L : N ⟶ N'), 
   function.injective L →
   function.injective (tensor_product.map L (linear_map.id : M →ₗ[R] M)) 
-
+  
 /--
-Theorem due to J.Lambek, see ![](../doc/Lambek.pdf)
+Theorem due to J.Lambek, see ![this document](../doc/Lambek.pdf)
 -/
 lemma Lambek : flat' R M ↔ injective (Module.of R $ character_module M) := sorry
 
@@ -35,8 +35,8 @@ lemma flat'_of_baer : module.Baer.{u u} R (character_module.{u} M) → flat' R M
 def restrict_to_ideal (I : ideal R) :
   (R →ₗ[R] M) →ₗ[R] (I →ₗ[R] M) :=
 { to_fun := λ f, f.dom_restrict I,
-  map_add' := sorry,
-  map_smul' := sorry }
+  map_add' := λ f g, linear_map.ext $ λ x, rfl,
+  map_smul' := λ r f, linear_map.ext $ λ x, rfl }
 
 -- need tensor hom adjunction
 -- lemma restrict_to_ideal_character_module (I : ideal R) :

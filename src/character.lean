@@ -117,6 +117,24 @@ def functor : (Module.{u} R)ᵒᵖ ⥤ Module.{u} R :=
   map_id' := λ M, map_id M.unop,
   map_comp' := λ M N N' L L', map_comp L'.unop L.unop }
 
+include R
+lemma non_zero {m : M} (hm : m ≠ 0) : ∃ (h : character_module M), h m ≠ 0 :=
+begin 
+  let M' : submodule R M := submodule.span R {m},
+  suffices : ∃ (h' : M' →+ rat_circle), h' ⟨m, submodule.subset_span (set.mem_singleton _)⟩ ≠ 0,
+  { obtain ⟨h', hh'⟩ := this,
+    let ι : AddCommGroup.of M' ⟶ AddCommGroup.of M := ⟨λ m, m.1, rfl, λ _ _, rfl⟩,
+    haveI : mono ι,
+    { refine concrete_category.mono_of_injective _ subtype.val_injective, },
+    let f' : AddCommGroup.of M ⟶ AddCommGroup.of rat_circle :=
+      injective.factor_thru (show AddCommGroup.of M' ⟶ AddCommGroup.of rat_circle, from h') ι,
+    refine ⟨show M →+ rat_circle, from f', _⟩,
+    have eq0 : _ ≫ f' = _ := injective.comp_factor_thru _ _,
+    erw fun_like.congr_fun eq0 ⟨m, submodule.subset_span (set.mem_singleton _)⟩,
+    exact hh' },
+  sorry,
+end
+
 end character_module
 
 end character_module
