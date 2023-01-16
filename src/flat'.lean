@@ -3,6 +3,7 @@ import linear_algebra.tensor_product
 import algebra.module.injective
 
 import .character
+import .hom
 
 universes u
 
@@ -28,8 +29,8 @@ Theorem due to J.Lambek, see ![this document](../doc/Lambek.pdf)
 lemma Lambek : flat' R M ↔ injective (Module.of R $ character_module M) := sorry
 
 lemma flat'_of_baer : module.Baer.{u u} R (character_module.{u} M) → flat' R M := 
-  λ h, (Lambek _ _).mpr $ (module.injective_iff_injective_object.{u u} R 
-      (character_module M)).mp (module.Baer.injective h)
+λ h, (Lambek _ _).mpr $ (module.injective_iff_injective_object.{u u} R 
+    (character_module M)).mp (module.Baer.injective h)
 
 @[simps apply]
 def restrict_to_ideal (I : ideal R) :
@@ -37,10 +38,6 @@ def restrict_to_ideal (I : ideal R) :
 { to_fun := λ f, f.dom_restrict I,
   map_add' := λ f g, linear_map.ext $ λ x, rfl,
   map_smul' := λ r f, linear_map.ext $ λ x, rfl }
-
--- need tensor hom adjunction
--- lemma restrict_to_ideal_character_module (I : ideal R) :
---   restrict_to_ideal R (character_module M) I = _
 
 lemma module.Baer_iff : 
   module.Baer.{u u} R M ↔ 
@@ -76,5 +73,29 @@ by tensor hom adjunction,
 `Hom(R, character_module M) → Hom(I, character_module M)` is surjective for all `I`
 so `character_module M` is injective, hence `M` is flat.
 -/
+
+@[simps]
+def tensor_embedding (I : ideal R) : (I ⊗[R] M) →ₗ[R] (R ⊗[R] M) :=
+tensor_product.map 
+{ to_fun := coe,
+  map_add' := λ _ _, rfl,
+  map_smul' := λ _ _, rfl } 
+{ to_fun := id,
+  map_add' := λ _ _, rfl,
+  map_smul' := λ _ _, rfl }
+
+namespace content
+
+variables {I : ideal R} (hI : function.injective (tensor_embedding R M I))
+
+example : function.surjective (character_module.map (tensor_embedding R M I)) :=
+character_module.map_inj _ hI
+
+example : (character_module (R ⊗[R] M)) →ₗ[R] (character_module (I ⊗[R] M)) :=
+begin 
+  have := (Module.tensor_left_hom_adj $ Module.of R M).hom_equiv (Module.of R R),
+end
+
+end content
 
 end Module
