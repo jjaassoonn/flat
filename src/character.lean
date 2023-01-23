@@ -4,7 +4,10 @@ import group_theory.quotient_group
 import data.rat.basic
 import category_theory.preadditive.injective
 
+import .tensor_hom
+
 open category_theory
+open_locale tensor_product
 
 universes u
 
@@ -116,6 +119,33 @@ def functor : (Module.{u} R)ᵒᵖ ⥤ Module.{u} R :=
   map := λ M N L, map L.unop,
   map_id' := λ M, map_id M.unop,
   map_comp' := λ M N N' L L', map_comp L'.unop L.unop }
+
+def hom_equiv : (N →ₗ[R] character_module M) ≃ (character_module $ N ⊗[R] M) := 
+_
+-- { to_fun := λ f, tensor_product.lift_add_monoid_hom 
+--   { to_fun := λ p, f p.1 p.2,
+--     map_zero' := by erw map_zero,
+--     map_add' := _ } _ _ _ _ _,
+--   inv_fun := λ f, _,
+--   -- { to_fun := λ n, 
+--   --   { to_fun := λ m, f (n ⊗ₜ m),
+--   --     map_zero' := by rw [tensor_product.tmul_zero, map_zero],
+--   --     map_add' := λ m m', by rw [tensor_product.tmul_add, map_add] },
+--   --   map_add' := λ n n', add_monoid_hom.ext $ λ m, 
+--   --     by simp [tensor_product.add_tmul],
+--   --   map_smul' := λ r n, 
+--   --   begin 
+--   --     ext1 m,
+--   --     simp only [add_monoid_hom.coe_mk, ring_hom.id_apply, smul_apply],
+--   --     haveI : tensor_product.compatible_smul ℤ R N M,
+--   --     { fconstructor,
+--   --       intros r' m' n',
+--   --       erw quotient.eq',
+--   --       refine tensor_product.eqv.of_smul _ _ },
+--   --     rw tensor_product.smul_tmul,
+--   --   end },
+--   left_inv := _,
+--   right_inv := _ }
 
 include R
 lemma non_zero {m : M} (hm : m ≠ 0) : ∃ (h : character_module M), h m ≠ 0 :=
