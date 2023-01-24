@@ -372,6 +372,7 @@ variables (R' : Type u) [comm_ring R']
 variables {M N : Type v} [add_comm_group M] [add_comm_group N]
 variables [module R' M] [module R' N]
 
+@[simps]
 def to_add_comm_group {C : Type v} [add_comm_group C]
   (b : M →+ (N →+ C)) (hb : ∀ (r : R') (m : M) (n : N), b (r • m) n = b m (r • n)) :
   (M ⊗[R'] N) →+ C :=
@@ -382,6 +383,24 @@ def to_add_comm_group {C : Type v} [add_comm_group C]
   map_smul' := λ r (m : M), linear_map.ext $ λ n, 
   by simpa only [add_monoid_hom.coe_to_int_linear_map, ring_hom.id_apply, hb] }).to_add_monoid_hom
 
+lemma to_add_comm_group.apply_tmul {C : Type v} [add_comm_group C]
+  (b : M →+ (N →+ C)) (hb : ∀ (r : R') (m : M) (n : N), b (r • m) n = b m (r • n))
+  (m : M) (n : N) : to_add_comm_group R' b hb (m ⊗ₜ n) = b m n :=
+by rw [to_add_comm_group_apply, tmul, add_con.coe_mk', add_con.lift_coe,
+    free_add_monoid.lift_eval_of]
+
+lemma to_add_comm_group.uniq {C : Type v} [add_comm_group C]
+  (b : M →+ (N →+ C)) (hb : ∀ (r : R') (m : M) (n : N), b (r • m) n = b m (r • n))
+  (l : (M ⊗[R'] N) →+ C) (hl : ∀ ⦃m : M⦄ ⦃n : N⦄,  l (m ⊗ₜ n) = b m n) :
+  to_add_comm_group R' b hb = l := add_monoid_hom.ext $ λ z,
+begin 
+  induction z using tensor_product.induction_on with m n x y hx hy,
+  { simp only [map_zero] },
+  { rw [to_add_comm_group.apply_tmul, hl], },
+  { rw [map_add, hx, hy, map_add] },
+end
+
+@[reducible]
 def to_add_comm_group' {C : Type v} [add_comm_group C]
   (b : M × N → C) 
   (hN0 : ∀ (n : N), b (0, n) = 0)
@@ -399,5 +418,15 @@ to_add_comm_group R'
   map_add' := λ m m', add_monoid_hom.ext $ λ n, show b (m + m', n) = b (m, n) + b (m', n), 
     from hMadd _ _ _ } $ λ r m n,
 show b (r • m, n) = b (m, r • n), from hb _ _ _
+
+lemma to_add_comm_group'.apply_tmul {C : Type v} [add_comm_group C]
+  (b : M × N → C) 
+  (hN0 : ∀ (n : N), b (0, n) = 0)
+  (hM0 : ∀ (m : M), b (m, 0) = 0)
+  (hMadd : ∀ (n : N) (m m' : M), b (m + m', n) = b (m, n) + b (m', n))
+  (hNadd : ∀ (m : M) (n n' : N), b (m, n + n') = b (m, n) + b (m, n'))
+  (hb : ∀ (r : R') (m : M) (n : N), b ((r • m), n) = b (m, (r • n)))
+  (m : M) (n : N) : to_add_comm_group' R' b hN0 hM0 hMadd hNadd hb (m ⊗ₜ n) = b (m, n) :=
+by rw [to_add_comm_group.apply_tmul]; refl
 
 end tensor_product
