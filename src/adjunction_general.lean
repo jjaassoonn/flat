@@ -429,4 +429,11 @@ lemma to_add_comm_group'.apply_tmul {C : Type v} [add_comm_group C]
   (m : M) (n : N) : to_add_comm_group' R' b hN0 hM0 hMadd hNadd hb (m ⊗ₜ n) = b (m, n) :=
 by rw [to_add_comm_group.apply_tmul]; refl
 
+open_locale big_operators
+
+lemma exists_rep (z : M ⊗[R'] N) : 
+  ∃ (ms : ℕ → M) (ns : ℕ → N) (s : finset ℕ),
+  z = ∑ i in s, ms i ⊗ₜ ns i :=
+sorry
+
 end tensor_product

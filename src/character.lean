@@ -123,6 +123,7 @@ def functor : (Module.{u} R)ᵒᵖ ⥤ Module.{u} R :=
   map_id' := λ M, map_id M.unop,
   map_comp' := λ M N N' L L', map_comp L'.unop L.unop }
 
+@[simps]
 def hom_equiv : (N →ₗ[R] character_module M) ≃ (character_module $ N ⊗[R] M) := 
 { to_fun := λ f, add_monoid_hom.to_int_linear_map $ tensor_product.to_add_comm_group' R (λ p, f p.1 p.2) 
     (λ m, by rw [map_zero, linear_map.zero_apply]) 
