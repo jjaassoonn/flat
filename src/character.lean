@@ -152,23 +152,72 @@ def hom_equiv : (N →ₗ[R] character_module M) ≃ (character_module $ N ⊗[R
     { rw [map_add, hz, hz', map_add] },
   end
    }
-  
-include R
+
+@[reducible]
+noncomputable def aux1_finite_order  
+  {m : M} (hm : m ≠ 0) (hm_order : add_order_of m ≠ 0)
+  (k : ℤ) : rat_circle :=
+ulift.up $ quotient_add_group.mk' _ (rat.mk k $ add_order_of m)
+
+lemma aux1_finite_order_wd {m : M} (hm : m ≠ 0) (hm_order : add_order_of m ≠ 0)
+  (k k' : ℤ) (EQ : k • m = k' • m) :
+  aux1_finite_order M hm hm_order k = aux1_finite_order M hm hm_order k' :=
+begin 
+  ext1,
+  rw quotient_add_group.mk'_eq_mk',
+  have EQ' : |k - k'| • m = 0,
+  { rcases abs_choice (k - k') with h|h; 
+    rw h;
+    try { rw neg_sub };
+    rw sub_smul;
+    rw EQ;
+    rw sub_self, },
+  obtain ⟨z, hz⟩ := add_order_of_dvd_iff_zsmul_eq_zero.mpr EQ',
+  suffices : ∃ (z : ℚ) (H : z ∈ (algebra_map ℤ ℚ).to_add_monoid_hom.range),
+    rat.mk (|k - k'|) ↑(add_order_of m) = z,
+  { obtain ⟨_, ⟨z, rfl⟩, (h : _ = (z : ℚ))⟩ := this,
+    rcases abs_choice (k - k') with h'|h',
+    { rw h' at h, 
+      rw [sub_eq_add_neg, rat.add_mk, ←rat.neg_def, add_neg_eq_iff_eq_add] at h,
+      rw h,
+      refine ⟨_, ⟨-z, rfl⟩, _⟩,
+      change _ + -(z : ℚ) = _,
+      abel, },
+    { rw h' at h,
+      rw [←rat.neg_def, sub_eq_add_neg, rat.add_mk, neg_eq_iff_neg_eq, ←rat.neg_def] at h,
+      replace h := h.symm,
+      rw [add_neg_eq_iff_eq_add] at h,
+      rw h,
+      refine ⟨_, ⟨z, rfl⟩, _⟩,
+      change _ + _ + (z : ℚ) = _,
+      abel, }, },
+  refine ⟨_, ⟨z, rfl⟩, _⟩,
+  rw hz,
+  change _ = (z : ℚ),
+  rw rat.coe_int_eq_mk,
+  rw rat.mk_eq,
+  { ring },
+  { exact_mod_cast hm_order },
+  { norm_num },
+end
+
+-- include R
 lemma non_zero {m : M} (hm : m ≠ 0) : ∃ (h : character_module M), h m ≠ 0 :=
 begin 
-  let M' : submodule R M := submodule.span R {m},
-  suffices : ∃ (h' : M' →+ rat_circle), h' ⟨m, submodule.subset_span (set.mem_singleton _)⟩ ≠ 0,
+  let M' : submodule ℤ M := submodule.span ℤ {m},
+  suffices : ∃ (h' : M' →ₗ[ℤ] rat_circle), h' ⟨m, submodule.subset_span (set.mem_singleton _)⟩ ≠ 0,
   { obtain ⟨h', hh'⟩ := this,
     let ι : AddCommGroup.of M' ⟶ AddCommGroup.of M := ⟨λ m, m.1, rfl, λ _ _, rfl⟩,
     haveI : mono ι,
     { refine concrete_category.mono_of_injective _ subtype.val_injective, },
     let f' : AddCommGroup.of M ⟶ AddCommGroup.of rat_circle :=
-      injective.factor_thru (show AddCommGroup.of M' ⟶ AddCommGroup.of rat_circle, from h') ι,
+      injective.factor_thru (show AddCommGroup.of M' ⟶ AddCommGroup.of rat_circle, 
+      from h'.to_add_monoid_hom) ι,
     refine ⟨add_monoid_hom.to_int_linear_map $ show M →+ rat_circle, from f', _⟩,
     have eq0 : _ ≫ f' = _ := injective.comp_factor_thru _ _,
     erw fun_like.congr_fun eq0 ⟨m, submodule.subset_span (set.mem_singleton _)⟩,
     exact hh' },
-  by_cases h_order : add_order_of m = 0,
+  by_cases h_order : add_order_of m ≠ 0,
   { sorry },
   { sorry },
 end
