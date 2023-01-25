@@ -4,7 +4,7 @@ import group_theory.quotient_group
 import data.rat.basic
 import category_theory.preadditive.injective
 
-import .tensor_hom
+import .adjunction_general
 
 open category_theory
 open_locale tensor_product
@@ -17,7 +17,6 @@ def rat_circle : Type u :=
 
 instance rat_circle.inj : injective (AddCommGroup.of rat_circle) := sorry
 
-
 section character_module
 
 variables {R : Type u} [comm_ring R] 
@@ -27,7 +26,7 @@ variables (N' : Type u) [add_comm_group N'] [module R N']
 
 @[derive add_comm_group]
 def character_module : Type u :=
-M →+ rat_circle.{u}
+M →ₗ[ℤ] rat_circle.{u}
 
 instance character_module.coe_to_fun : has_coe_to_fun (character_module M) (λ _, M → rat_circle.{u}) :=
 { coe := λ f, f.to_fun }
@@ -35,38 +34,39 @@ instance character_module.coe_to_fun : has_coe_to_fun (character_module M) (λ _
 instance character_module.add_monoid_hom_class :
   add_monoid_hom_class (character_module M) M rat_circle.{u} :=
 { coe := λ f, f,
-  coe_injective' := λ f g h, add_monoid_hom.ext $ λ x, congr_fun h _,
+  coe_injective' := λ f g h, linear_map.ext $ λ x, congr_fun h _,
   map_add := λ f, f.map_add,
   map_zero := λ f, f.map_zero }
 
 instance character_module.has_smul : has_smul R (character_module M) :=
 { smul := λ r f, 
   { to_fun := λ m, f (r • m),
-    map_zero' := by rw [smul_zero, map_zero],
-    map_add' := λ x y, by rw [smul_add, map_add] } }
+    -- map_zero' := by rw [smul_zero, map_zero],
+    map_add' := λ x y, by rw [smul_add, map_add],
+    map_smul' := λ z x, by rw [ring_hom.id_apply, ←f.map_smul, smul_comm] } }
 
 @[simp] lemma character_module.smul_apply (r : R) (f : character_module M) (m : M) :
   (r • f) m = f (r • m) := rfl
 
 instance character_module.mul_action : mul_action R (character_module M) :=
-{ one_smul := λ f, add_monoid_hom.ext $ λ x, by rw [character_module.smul_apply, one_smul],
-  mul_smul := λ a b f, add_monoid_hom.ext $ λ x, 
+{ one_smul := λ f, linear_map.ext $ λ x, by rw [character_module.smul_apply, one_smul],
+  mul_smul := λ a b f, linear_map.ext $ λ x, 
     by rw [character_module.smul_apply, mul_comm, mul_smul, character_module.smul_apply, character_module.smul_apply],
   ..character_module.has_smul M}
 
 instance character_module.distrib_mul_action : distrib_mul_action R (character_module M) :=
-{ smul_zero := λ r, add_monoid_hom.ext $ λ x, 
-    by rw [character_module.smul_apply, add_monoid_hom.zero_apply, add_monoid_hom.zero_apply],
-  smul_add := λ r f g, add_monoid_hom.ext $ λ x,
-    by rw [character_module.smul_apply, add_monoid_hom.add_apply, add_monoid_hom.add_apply,
+{ smul_zero := λ r, linear_map.ext $ λ x, 
+    by rw [character_module.smul_apply, linear_map.zero_apply, linear_map.zero_apply],
+  smul_add := λ r f g, linear_map.ext $ λ x,
+    by rw [character_module.smul_apply, linear_map.add_apply, linear_map.add_apply,
       character_module.smul_apply, character_module.smul_apply],
   ..character_module.mul_action M}
 
 instance character_module.module : module R (character_module M) :=
-{ add_smul := λ a b f, add_monoid_hom.ext $ λ x, 
-    by simp only [character_module.smul_apply, add_smul, add_monoid_hom.add_apply, map_add],
-  zero_smul := λ f, add_monoid_hom.ext $ λ x, 
-    by simp only [character_module.smul_apply, zero_smul, map_zero, add_monoid_hom.zero_apply],
+{ add_smul := λ a b f, linear_map.ext $ λ x, 
+    by simp only [character_module.smul_apply, add_smul, linear_map.add_apply, map_add],
+  zero_smul := λ f, linear_map.ext $ λ x, 
+    by simp only [character_module.smul_apply, zero_smul, map_zero, linear_map.zero_apply],
   ..character_module.distrib_mul_action M}
 
 namespace character_module
@@ -77,16 +77,19 @@ variables {M N}
 
 @[simps apply]
 def map (L : M →ₗ[R] N) : character_module N →ₗ[R] character_module M :=
-{ to_fun := λ f, f.comp L.to_add_monoid_hom,
-  map_add' := λ f g, add_monoid_hom.ext $ λ x, by simp,
-  map_smul' := λ r f, add_monoid_hom.ext $ λ x, by simp }
+{ to_fun := λ f, 
+  { to_fun := λ m, f $ L m,
+    map_add' := λ m m', by rw [map_add, map_add],
+    map_smul' := λ z m, by rw [ring_hom.id_apply, map_zsmul, f.map_smul] },
+  map_add' := λ f g, linear_map.ext $ λ x, by simp,
+  map_smul' := λ r f, linear_map.ext $ λ x, by simp }
 
 end map
 
 lemma map_id : 
   map (linear_map.id : M →ₗ[R] M) = 
   (linear_map.id : character_module M →ₗ[R] character_module M) :=
-linear_map.ext $ λ f, add_monoid_hom.ext $ λ x, by simp
+linear_map.ext $ λ f, linear_map.ext $ λ x, by simp
 
 section map
 
@@ -94,21 +97,21 @@ variables {M N N'}
 
 lemma map_comp (L : M →ₗ[R] N) (L' : N →ₗ[R] N') :
   map (L'.comp L) = (map L).comp (map L') :=
-linear_map.ext $ λ f, add_monoid_hom.ext $ λ x, by simp
+linear_map.ext $ λ f, linear_map.ext $ λ x, by simp
 
 lemma map_inj (L : M →ₗ[R] N) (hL : function.injective L) :
   function.surjective (map L) :=
 λ g, ⟨begin 
   haveI : mono (AddCommGroup.of_hom L.to_add_monoid_hom) :=
     by rwa AddCommGroup.mono_iff_injective,
-  exact injective.factor_thru (AddCommGroup.of_hom g) 
-    (AddCommGroup.of_hom L.to_add_monoid_hom),
+  refine add_monoid_hom.to_int_linear_map (injective.factor_thru (AddCommGroup.of_hom $ g.to_add_monoid_hom) 
+    (AddCommGroup.of_hom L.to_add_monoid_hom)),
 end, begin 
   ext x : 1,
   haveI : mono (AddCommGroup.of_hom L.to_add_monoid_hom) :=
     by rwa AddCommGroup.mono_iff_injective,
-  rw [map_apply, add_monoid_hom.comp_apply],
-  exact fun_like.congr_fun (injective.comp_factor_thru (AddCommGroup.of_hom g)
+  rw [map_apply, linear_map.coe_mk, add_monoid_hom.coe_to_int_linear_map],
+  exact fun_like.congr_fun (injective.comp_factor_thru (AddCommGroup.of_hom g.to_add_monoid_hom)
     (AddCommGroup.of_hom L.to_add_monoid_hom)) x,
 end⟩
 
@@ -121,32 +124,34 @@ def functor : (Module.{u} R)ᵒᵖ ⥤ Module.{u} R :=
   map_comp' := λ M N N' L L', map_comp L'.unop L.unop }
 
 def hom_equiv : (N →ₗ[R] character_module M) ≃ (character_module $ N ⊗[R] M) := 
-_
--- { to_fun := λ f, tensor_product.lift_add_monoid_hom 
---   { to_fun := λ p, f p.1 p.2,
---     map_zero' := by erw map_zero,
---     map_add' := _ } _ _ _ _ _,
---   inv_fun := λ f, _,
---   -- { to_fun := λ n, 
---   --   { to_fun := λ m, f (n ⊗ₜ m),
---   --     map_zero' := by rw [tensor_product.tmul_zero, map_zero],
---   --     map_add' := λ m m', by rw [tensor_product.tmul_add, map_add] },
---   --   map_add' := λ n n', add_monoid_hom.ext $ λ m, 
---   --     by simp [tensor_product.add_tmul],
---   --   map_smul' := λ r n, 
---   --   begin 
---   --     ext1 m,
---   --     simp only [add_monoid_hom.coe_mk, ring_hom.id_apply, smul_apply],
---   --     haveI : tensor_product.compatible_smul ℤ R N M,
---   --     { fconstructor,
---   --       intros r' m' n',
---   --       erw quotient.eq',
---   --       refine tensor_product.eqv.of_smul _ _ },
---   --     rw tensor_product.smul_tmul,
---   --   end },
---   left_inv := _,
---   right_inv := _ }
-
+{ to_fun := λ f, add_monoid_hom.to_int_linear_map $ tensor_product.to_add_comm_group' R (λ p, f p.1 p.2) 
+    (λ m, by rw [map_zero, linear_map.zero_apply]) 
+    (λ n, by rw [map_zero]) (λ m n n', by rw [map_add, linear_map.add_apply]) 
+    (λ n m m', by rw [map_add]) $ λ r n m, by simpa only [map_smul],
+  inv_fun := λ g, 
+  { to_fun := λ n, 
+    { to_fun := λ m, g (n ⊗ₜ m),
+      -- map_zero' := by rw [tensor_product.tmul_zero, map_zero],
+      map_add' := λ m m', by rw [tensor_product.tmul_add, map_add],
+      map_smul' := λ z m, by rw [ring_hom.id_apply, ←map_zsmul, tensor_product.smul_tmul', 
+        tensor_product.smul_tmul] },
+    map_add' := λ n n', linear_map.ext $ λ m, by simp only [linear_map.coe_mk, 
+      tensor_product.add_tmul, map_add, linear_map.add_apply],
+    map_smul' := λ r n, linear_map.ext $ λ m, by simp only [linear_map.coe_mk, 
+      ring_hom.id_apply, character_module.smul_apply, tensor_product.smul_tmul], },
+  left_inv := λ f, linear_map.ext $ λ n, linear_map.ext $ λ m, by simp only [linear_map.coe_mk, 
+    add_monoid_hom.coe_to_int_linear_map, tensor_product.to_add_comm_group'.apply_tmul],
+  right_inv := λ g,
+  begin 
+    ext1 z,
+    induction z using tensor_product.induction_on with m n z z' hz hz',
+    { simp only [map_zero] },
+    { simp only [linear_map.coe_mk, tensor_product.to_add_comm_group'.apply_tmul,
+        add_monoid_hom.coe_to_int_linear_map], },
+    { rw [map_add, hz, hz', map_add] },
+  end
+   }
+  
 include R
 lemma non_zero {m : M} (hm : m ≠ 0) : ∃ (h : character_module M), h m ≠ 0 :=
 begin 
@@ -158,11 +163,13 @@ begin
     { refine concrete_category.mono_of_injective _ subtype.val_injective, },
     let f' : AddCommGroup.of M ⟶ AddCommGroup.of rat_circle :=
       injective.factor_thru (show AddCommGroup.of M' ⟶ AddCommGroup.of rat_circle, from h') ι,
-    refine ⟨show M →+ rat_circle, from f', _⟩,
+    refine ⟨add_monoid_hom.to_int_linear_map $ show M →+ rat_circle, from f', _⟩,
     have eq0 : _ ≫ f' = _ := injective.comp_factor_thru _ _,
     erw fun_like.congr_fun eq0 ⟨m, submodule.subset_span (set.mem_singleton _)⟩,
     exact hh' },
-  sorry,
+  by_cases h_order : add_order_of m = 0,
+  { sorry },
+  { sorry },
 end
 
 end character_module
