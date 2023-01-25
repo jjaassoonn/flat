@@ -1,5 +1,6 @@
 import algebra.category.Module.basic
 import linear_algebra.tensor_product
+import linear_algebra.finsupp
 
 -- import .hom
 
@@ -432,8 +433,26 @@ by rw [to_add_comm_group.apply_tmul]; refl
 open_locale big_operators
 
 lemma exists_rep (z : M ⊗[R'] N) : 
-  ∃ (ms : ℕ → M) (ns : ℕ → N) (s : finset ℕ),
+  ∃ {ι : Type v} (ms : ι → M) (ns : ι → N) (s : finset ι),
   z = ∑ i in s, ms i ⊗ₜ ns i :=
-sorry
+begin 
+  classical,
+  have EQ := span_tmul_eq_top R' M N,
+  have mem1 : z ∈ ⊤ := submodule.mem_top,
+  rw ←EQ at mem1,
+  rw mem_span_set at mem1,
+  obtain ⟨c, hc1, rfl⟩ := mem1,
+  choose m n hm using hc1,
+  refine ⟨M ⊗[R'] N, λ i, if hi : i ∈ c.support then c i • m hi else 0, 
+    λ i, if hi : i ∈ c.support then n hi else 0, c.support, _⟩,
+  rw finsupp.sum,
+  refine finset.sum_congr rfl (λ i hi, _),
+  split_ifs,
+  { specialize hm h,
+    rw ←smul_tmul',
+    congr' 1,
+    exact hm.symm, },
+  exact false.elim (h hi),
+end
 
 end tensor_product
