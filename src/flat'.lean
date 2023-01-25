@@ -8,7 +8,7 @@ import .adjunction_general
 universes u
 
 open_locale tensor_product
-open category_theory
+open category_theory character_module
 
 namespace Module
 
@@ -19,17 +19,52 @@ variables (M : Type u) [add_comm_group M] [module R M]
 A module `M` is flat iff for any injective linear map `L : N ⟶ N'`, the induced
 map `N ⊗ M ⟶ N' ⊗ M` is also injective
 -/
-def flat' : Prop := ∀ ⦃N N' : Module R⦄ (L : N ⟶ N'), 
+def flat' : Prop := ∀ ⦃N N' : Module.{u} R⦄ (L : N ⟶ N'), 
   function.injective L →
   function.injective (tensor_product.map L (linear_map.id : M →ₗ[R] M)) 
-  
+
+ open_locale big_operators 
 /--
 Theorem due to J.Lambek, see ![this document](../doc/Lambek.pdf)
 -/
-lemma Lambek : flat' R M ↔ injective (Module.of R $ character_module M) := sorry
+lemma Lambek : injective (Module.of R $ character_module M) → flat' R M := 
+begin 
+  intros h_injective A B L hL,
+  haveI : mono L := sorry,
+  rw ←linear_map.ker_eq_bot at ⊢,
+  rw eq_bot_iff at ⊢,
+  rintros z hz,
+  rw submodule.mem_bot,
+  rw linear_map.mem_ker at hz,
+  by_cases rid : z = 0, 
+  { exact rid },
+  exfalso,
+  obtain ⟨g, hg⟩ := character_module.non_zero.{u} (A ⊗[R] M) rid,
+  work_on_goal 2 { exact R },
+  work_on_goal 2 { apply_instance },
+  work_on_goal 2 { exact tensor_product.left_module },
+  set f : A →ₗ[R] (character_module M) := 
+  { to_fun := λ a, { to_fun := λ m, g (a ⊗ₜ m), map_add' := sorry, map_smul' := sorry }, 
+    map_add' := sorry, map_smul' := sorry } with f_eq,
+  obtain ⟨f' : B →ₗ[R] (character_module M), hf'⟩ := h_injective.factors f L,
+  set g' : (character_module $ B ⊗[R] M) := character_module.hom_equiv _ _ f' with g'_eq,
+  obtain ⟨a, m, s, rfl⟩ := tensor_product.exists_rep _ z,
+  have EQ : g' (∑ i in s, L (a i) ⊗ₜ m i) = 0,
+  { simp_rw [map_sum, tensor_product.map_tmul, linear_map.id_apply] at hz,
+    rw hz, rw map_zero, },
+  refine hg _,
+  rw map_sum,
+  simp_rw [map_sum, g'_eq, hom_equiv_apply, add_monoid_hom.coe_to_int_linear_map,
+      tensor_product.to_add_comm_group'.apply_tmul] at EQ,
+  convert EQ using 1,
+  refine finset.sum_congr rfl (λ i hi, _),
+  erw fun_like.congr_fun hf',
+  rw f_eq,
+  refl,
+end
 
 lemma flat'_of_baer : module.Baer.{u u} R (character_module.{u} M) → flat' R M := 
-λ h, (Lambek _ _).mpr $ (module.injective_iff_injective_object.{u u} R 
+λ h, Lambek _ _ $ (module.injective_iff_injective_object.{u u} R 
     (character_module M)).mp (module.Baer.injective h)
 
 instance aux1 : module R (R →ₗ[R] M) := linear_map.module
@@ -84,7 +119,7 @@ section
 
 variables {R}
 
-@[simps]
+@[reducible]
 def tensor_embedding (I : ideal R) : (I ⊗[R] M) →ₗ[R] (R ⊗[R] M) :=
 tensor_product.map 
 { to_fun := coe,
@@ -103,44 +138,43 @@ variables {I : ideal R} (hI : function.injective (tensor_embedding M I))
 lemma surj1 : function.surjective (character_module.map (tensor_embedding M I)) :=
 character_module.map_inj _ hI
 
-@[simps]
-def character_module_map' : (character_module (R ⊗[R] M)) →ₗ[R] (character_module (I ⊗[R] M)) :=
-{ to_fun := λ l, 
-  { to_fun := λ x, l (tensor_embedding _ I x),
-    map_zero' := by rw [map_zero, map_zero],
-    map_add' := λ z z', by rw [map_add, map_add] },
-  map_add' := λ f g, add_monoid_hom.ext $ λ z, by simp only [add_monoid_hom.coe_mk,
-    add_monoid_hom.add_apply],
-  map_smul' := λ r f, add_monoid_hom.ext $ λ z, by { simp only [add_monoid_hom.coe_mk, 
-    ring_hom.id_apply, character_module.smul_apply, (tensor_embedding M I).map_smul r z], } }
-
-lemma character_module.map_tensor_embedding :
-  character_module.map (tensor_embedding M I) = 
-  character_module_map' R M :=
-linear_map.ext $ λ l, add_monoid_hom.ext $ λ z',
-begin 
-  rw character_module_map'_apply_apply,
-  rw character_module.map_apply,
-  rw add_monoid_hom.comp_apply,
-  refl,
-end
-
-lemma injective_character : module.Baer.{u u} R (character_module M) :=
+lemma injective_character (hIs : ∀ (I : ideal R), function.injective (tensor_embedding M I)) : 
+  module.Baer.{u u} R (character_module M) :=
 begin 
   rw module.Baer_iff,
   intros I l,
-  refine ⟨_, _⟩,
-  { have := @Module.tensor_hom_adjunction R ℤ _ _ M _ _ _ (bimodule.int _),
-    have : R →ₗ[R] (character_module M) := (this.hom_equiv (Module.of R R) (Module.of _ rat_circle) _) _,
-      },
+  obtain ⟨F, hF⟩ := surj1 _ _ (hIs I) (character_module.hom_equiv _ _ l),
+  refine ⟨(character_module.hom_equiv _ _).symm F, _⟩,
+  ext i m : 2,
+  rw restrict_to_ideal_apply,
+  rw linear_map.dom_restrict_apply,
+  rw character_module.hom_equiv,
+  rw equiv.coe_fn_symm_mk,
+  rw linear_map.coe_mk,
+  rw linear_map.coe_mk,
+  have EQ := fun_like.congr_fun hF (i ⊗ₜ m),
+  rw character_module.map_apply at EQ,
+  rw linear_map.coe_mk at EQ,
+  rw tensor_product.map_tmul at EQ,
+  rw linear_map.coe_mk at EQ,
+  rw linear_map.coe_mk at EQ,
+  rw id at EQ,
+  rw EQ,
+  rw character_module.hom_equiv_apply,
+  rw add_monoid_hom.coe_to_int_linear_map,
+  rw tensor_product.to_add_comm_group'.apply_tmul,
 end
 
-example : (R →ₗ[R] character_module M) →ₗ[R] (I →ₗ[R] character_module M) :=
-{ to_fun := λ l, l.comp $ show I →ₗ[R] R, from 
-    { to_fun := coe, map_add' := λ _ _, rfl, map_smul' := λ _ _, rfl },
-  map_add' := λ l l', by rw [linear_map.add_comp],
-  map_smul' := λ r l, by rw [linear_map.smul_comp, ring_hom.id_apply] }
-
+/--
+`tensor_embedding M I` is the canonical map `I ⊗ M ⟶ R ⊗ M`
+-/
+lemma flat'_of_ideal (hIs : ∀ (I : ideal R), function.injective (tensor_embedding M I)) :
+  flat' R M :=
+begin 
+  apply flat'_of_baer,
+  apply injective_character,
+  assumption,
+end
 
 end content
 
