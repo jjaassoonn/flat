@@ -159,7 +159,36 @@ noncomputable def aux1_finite_order
   (k : ℤ) : rat_circle :=
 ulift.up $ quotient_add_group.mk' _ (rat.mk k $ add_order_of m)
 
-lemma aux1_finite_order_wd {m : M} (hm : m ≠ 0) (hm_order : add_order_of m ≠ 0)
+lemma aux1_finite_order.map_add {m : M} (hm : m ≠ 0) (hm_order : add_order_of m ≠ 0)
+  (k k' : ℤ) : 
+  aux1_finite_order M hm hm_order (k + k') = 
+  aux1_finite_order M hm hm_order k + aux1_finite_order M hm hm_order k' :=
+begin 
+  ext1,
+  erw quotient_add_group.mk'_eq_mk',
+  refine ⟨_, ⟨0, rfl⟩, _⟩,
+  erw add_zero,
+  rw rat.add_mk,
+end
+
+lemma aux1_finite_order.map_zsmul {m : M} (hm : m ≠ 0) (hm_order : add_order_of m ≠ 0)
+  (k k' : ℤ) : 
+  aux1_finite_order M hm hm_order (k * k') = 
+  k • aux1_finite_order M hm hm_order k' :=
+begin 
+  ext1,
+  erw quotient_add_group.mk'_eq_mk',
+  refine ⟨_, ⟨0, rfl⟩, _⟩,
+  erw add_zero,
+  rw zsmul_eq_mul,
+  rw rat.coe_int_eq_mk,
+  rw rat.mul_def,
+  work_on_goal 2 { norm_num },
+  work_on_goal 2 { exact_mod_cast hm_order },
+  rw one_mul,
+end
+
+lemma aux1_finite_order_wd' {m : M} (hm : m ≠ 0) (hm_order : add_order_of m ≠ 0)
   (k k' : ℤ) (EQ : k • m = k' • m) :
   aux1_finite_order M hm hm_order k = aux1_finite_order M hm hm_order k' :=
 begin 
@@ -201,6 +230,54 @@ begin
   { norm_num },
 end
 
+@[simps]
+noncomputable def morphism_finite_order {m : M} (hm : m ≠ 0) (hm_order : add_order_of m ≠ 0) :
+  (submodule.span ℤ {m} : submodule ℤ M) →ₗ[ℤ] rat_circle :=
+{ to_fun := λ m', aux1_finite_order M hm hm_order (submodule.mem_span_singleton.mp m'.2).some,
+  map_add' := λ m' m'', 
+  begin 
+    generalize_proofs h1 h2 h3,
+    have EQ : (h2.some + h3.some) • m = h1.some • m,
+    { rw [add_smul, h2.some_spec, h3.some_spec, h1.some_spec], refl, },
+    rw ←aux1_finite_order_wd' M hm hm_order _ _ EQ,
+    rw aux1_finite_order.map_add,
+  end,
+  map_smul' := λ z m', 
+  begin 
+    generalize_proofs h1 h2,
+    have EQ : (z * h2.some) • m = h1.some • m,
+    { rw [mul_smul, h2.some_spec, h1.some_spec], refl, },
+    rw ←aux1_finite_order_wd' M hm hm_order _ _ EQ,
+    rw ring_hom.id_apply,
+    rw aux1_finite_order.map_zsmul,
+  end }
+
+lemma morphism_finite_order.apply_m {m : M} (hm : m ≠ 0) (hm_order : add_order_of m ≠ 0) :
+  morphism_finite_order M hm hm_order ⟨m, submodule.mem_span_singleton_self _⟩ ≠ 0 := 
+begin 
+  rw morphism_finite_order_apply,
+  generalize_proofs h1 h2,
+  rw show aux1_finite_order M hm hm_order h2.some = aux1_finite_order M hm hm_order 1,
+  { rw aux1_finite_order_wd', rw [h2.some_spec, one_smul] },
+  change ¬ _,
+  rw (ulift.ext_iff _ _).not,
+  -- change ulift.down _ ≠ 0,
+  erw quotient_add_group.eq_zero_iff,
+  rintros ⟨z, (hz : (z : ℚ) = _)⟩,
+  rw rat.coe_int_eq_mk at hz,
+  rw rat.mk_eq at hz,
+  work_on_goal 2 { norm_num },
+  work_on_goal 2 { exact_mod_cast hm_order },
+  rw [one_mul] at hz,
+  rw int.mul_eq_one_iff_eq_one_or_neg_one at hz,
+  rcases hz with ⟨rfl, hz⟩|⟨rfl, hz⟩,
+  { refine hm (add_monoid.order_of_eq_one_iff.mp _),
+    exact_mod_cast hz, },
+  { have rid := int.coe_nat_nonneg (add_order_of m),
+    rw hz at rid,
+    linarith only [rid], },
+end
+
 -- include R
 lemma non_zero {m : M} (hm : m ≠ 0) : ∃ (h : character_module M), h m ≠ 0 :=
 begin 
@@ -218,7 +295,7 @@ begin
     erw fun_like.congr_fun eq0 ⟨m, submodule.subset_span (set.mem_singleton _)⟩,
     exact hh' },
   by_cases h_order : add_order_of m ≠ 0,
-  { sorry },
+  { exact ⟨morphism_finite_order _ hm h_order, morphism_finite_order.apply_m _ hm h_order⟩, },
   { sorry },
 end
 
