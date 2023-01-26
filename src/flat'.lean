@@ -40,9 +40,6 @@ begin
   { exact rid },
   exfalso,
   obtain ⟨g, hg⟩ := character_module.non_zero.{u} (A ⊗[R] M) rid,
-  work_on_goal 2 { exact R },
-  work_on_goal 2 { apply_instance },
-  work_on_goal 2 { exact tensor_product.left_module },
   set f : A →ₗ[R] (character_module M) := 
   { to_fun := λ a, { to_fun := λ m, g (a ⊗ₜ m), map_add' := _, map_smul' := _ }, 
     map_add' := _, map_smul' := _ } with f_eq,

@@ -261,7 +261,6 @@ begin
   { rw aux1_finite_order_wd', rw [h2.some_spec, one_smul] },
   change ¬ _,
   rw (ulift.ext_iff _ _).not,
-  -- change ulift.down _ ≠ 0,
   erw quotient_add_group.eq_zero_iff,
   rintros ⟨z, (hz : (z : ℚ) = _)⟩,
   rw rat.coe_int_eq_mk at hz,
@@ -278,7 +277,95 @@ begin
     linarith only [rid], },
 end
 
--- include R
+@[reducible]
+noncomputable def aux1_infinite_order  
+  {m : M} (hm : m ≠ 0) (hm_order : add_order_of m = 0)
+  (k : ℤ) : rat_circle :=
+ulift.up $ quotient_add_group.mk' _ (rat.mk k 37)
+
+lemma aux1_infinite_order.eq_zero {m : M} (hm : m ≠ 0) (hm_order : add_order_of m = 0)
+  (k : ℤ) (hk : k • m = 0) : k = 0 :=
+begin 
+  by_contra rid,
+  have : int.nat_abs k • m = 0,
+  { suffices : (int.nat_abs k : ℤ) • m = 0,
+    { exact_mod_cast this },
+    rw ←int.abs_eq_nat_abs,
+    rcases abs_choice k with h|h;
+    rw h;
+    try { rw neg_smul };
+    rw hk,
+    rw neg_zero },
+  refine add_order_of_eq_zero_iff'.mp hm_order k.nat_abs _ this,
+  exact int.nat_abs_pos_of_ne_zero rid,
+end
+
+lemma aux1_infinite_order_wd' {m : M} (hm : m ≠ 0) (hm_order : add_order_of m = 0)
+  (k k' : ℤ) (hk : k • m = k' • m) : k = k' :=
+begin 
+  have EQ : (k - k') • m = 0,
+  { rw [sub_smul, hk, sub_self] },
+  rw ←int.sub_eq_zero_iff_eq,
+  exact aux1_infinite_order.eq_zero M hm hm_order _ EQ,
+end
+
+@[simps]
+noncomputable def morphism_infinite_order {m : M} (hm : m ≠ 0) (hm_order : add_order_of m = 0) :
+  (submodule.span ℤ {m} : submodule ℤ M) →ₗ[ℤ] rat_circle :=
+{ to_fun := λ m', aux1_infinite_order M hm hm_order (submodule.mem_span_singleton.mp m'.2).some,
+  map_add' := λ m' m'', 
+  begin 
+    generalize_proofs h1 h2 h3,
+    have EQ : (h2.some + h3.some) • m = h1.some • m,
+    { rw [add_smul, h2.some_spec, h3.some_spec, h1.some_spec], refl, },
+    rw ←aux1_infinite_order_wd' M hm hm_order _ _ EQ,
+    ext1,
+    erw quotient_add_group.mk'_eq_mk',
+    refine ⟨_, ⟨0, rfl⟩, _⟩,
+    erw add_zero,
+    rw rat.add_mk,
+  end,
+  map_smul' := λ z m', 
+  begin 
+    generalize_proofs h1 h2,
+    have EQ : (z * h2.some) • m = h1.some • m,
+    { rw [mul_smul, h2.some_spec, h1.some_spec], refl, },
+    rw ←aux1_infinite_order_wd' M hm hm_order _ _ EQ,
+    rw ring_hom.id_apply,
+    ext1,
+    erw quotient_add_group.mk'_eq_mk',
+    refine ⟨_, ⟨0, rfl⟩, _⟩,
+    erw add_zero,
+    rw zsmul_eq_mul,
+    rw rat.coe_int_eq_mk,
+    rw rat.mul_def,
+    work_on_goal 2 { norm_num },
+    work_on_goal 2 { norm_num },
+    rw one_mul,
+  end }
+
+lemma morphism_infinite_order.apply_m {m : M} (hm : m ≠ 0) (hm_order : add_order_of m = 0) :
+  morphism_infinite_order M hm hm_order ⟨m, submodule.mem_span_singleton_self _⟩ ≠ 0 :=
+begin 
+  rw morphism_infinite_order_apply,
+  generalize_proofs h1 h2,
+  rw show aux1_infinite_order M hm hm_order h2.some = aux1_infinite_order M hm hm_order 1,
+  { rw aux1_infinite_order_wd' M hm hm_order h2.some 1 _, rw [h2.some_spec, one_smul] },
+  change ¬ _,
+  rw (ulift.ext_iff _ _).not,
+  erw quotient_add_group.eq_zero_iff,
+  rintros ⟨z, (hz : (z : ℚ) = _)⟩,
+  rw rat.coe_int_eq_mk at hz,
+  rw rat.mk_eq at hz,
+  work_on_goal 2 { norm_num },
+  work_on_goal 2 { norm_num },
+  rw [one_mul] at hz,
+  rw int.mul_eq_one_iff_eq_one_or_neg_one at hz,
+  rcases hz with ⟨rfl, hz⟩|⟨rfl, hz⟩,
+  { linarith, },
+  { linarith, },
+end 
+
 lemma non_zero {m : M} (hm : m ≠ 0) : ∃ (h : character_module M), h m ≠ 0 :=
 begin 
   let M' : submodule ℤ M := submodule.span ℤ {m},
@@ -296,7 +383,8 @@ begin
     exact hh' },
   by_cases h_order : add_order_of m ≠ 0,
   { exact ⟨morphism_finite_order _ hm h_order, morphism_finite_order.apply_m _ hm h_order⟩, },
-  { sorry },
+  { exact ⟨morphism_infinite_order _ hm (by rwa [not_ne_iff] at h_order), 
+      morphism_infinite_order.apply_m _ hm (by rwa [not_ne_iff] at h_order)⟩ },
 end
 
 end character_module
