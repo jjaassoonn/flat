@@ -104,4 +104,25 @@ def direct_limit_of_tensor_product_iso_tensor_product_with_direct_limit :
   right_inv := direct_limit_of_tensor_product_iso_tensor_product_with_direct_limit.right_inv f M,
   ..direct_limit_of_tensor_product_to_tensor_product_with_direct_limit f M }
 
+universes u₁
+
+variables {P : Type u₁} [add_comm_group P] [module R P] (g : Π i, G i →ₗ[R] P)
+variables (Hg₁ : ∀ i j hij x, g j (f i j hij x) = g i x)
+variables (Hg₂ : ∀ i, function.injective $ g i)
+include Hg₁ Hg₂
+
+variables (R ι G f)
+
+lemma lift_inj : 
+  function.injective $ direct_limit.lift R ι G f g Hg₁ :=
+begin 
+  simp_rw [←linear_map.ker_eq_bot, submodule.eq_bot_iff, linear_map.mem_ker] at Hg₂ ⊢,
+  intros z hz,
+  induction z using module.direct_limit.induction_on with i gi,
+  rw direct_limit.lift_of at hz,
+  specialize Hg₂ i gi hz,
+  rw Hg₂,
+  simp only [map_zero],
+end
+
 end module

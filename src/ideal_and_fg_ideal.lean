@@ -242,7 +242,7 @@ def tensor_embedding' :
       Π (i j : fg_subideal I) (hij : i ≤ j), (i.to_ideal ⊗[R] M) →ₗ[R] (j.to_ideal ⊗[R] M)) →ₗ[R]
   R ⊗[R] M :=
 module.direct_limit.lift _ _ _ _ 
-  (λ i, tensor_product.map ⟨coe, λ _ _, rfl, λ _ _, rfl⟩ linear_map.id) $ λ i j hij z, 
+  (λ i, Module.tensor_embedding M i.to_ideal) $ λ i j hij z, 
 begin
   induction z using tensor_product.induction_on with ii m x y hx hy,
   { simp only [map_zero] },
