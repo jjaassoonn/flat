@@ -262,13 +262,8 @@ linear_map.ext $ λ z, begin
   { simp only [tensor_product.map_tmul, linear_map.comp_apply, linear_map.coe_mk, id,
       linear_equiv.coe_to_linear_map, ideal.tensor_iso_direct_limit_apply,
       module.direct_limit_of_tensor_product_iso_tensor_product_with_direct_limit_symm_apply,
-      linear_map.to_fun_eq_coe, ideal.to_as_direct_limit_apply, module.direct_limit.lift_of],
-      rw show module.direct_limit.of R (fg_subideal I) (λ i, i.to_ideal) 
-        (λ _ _ h, submodule.of_le h) (principal_fg_subideal i) ⟨(i : R), _⟩ ⊗ₜ linear_map.id m = 
-        module.direct_limit.of R (fg_subideal I) (λ i, i.to_ideal ⊗[R] M)
-          (λ _ _ h, tensor_product.map (submodule.of_le h) linear_map.id)
-          (principal_fg_subideal i ⊗[R] M) (⟨(i: R), _⟩ ⊗ m), from _,   
-    sorry },
+      linear_map.to_fun_eq_coe, ideal.to_as_direct_limit_apply, module.direct_limit.lift_of,
+      tensor_product.lift.tmul, linear_map.id_apply, subtype.coe_mk], },
   { simp only [map_add, hx, hy] }
 end
 
