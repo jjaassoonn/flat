@@ -49,7 +49,28 @@ begin
   { apply_instance },
   rw Module.epi_iff_surjective at epi0 ⊢,
   exact epi0,
-end 
+end
+
+lemma right_exact.range_subset_ker :
+  (map fAB linear_map.id : A ⊗[R] M →ₗ[R] B ⊗[R] M).range ≤ 
+  (map fBC linear_map.id : B ⊗[R] M →ₗ[R] C ⊗[R] M).ker :=
+begin 
+  rintros _ ⟨z, rfl⟩,
+  induction z using tensor_product.induction_on with a m x y hx hy,
+  { simp only [map_zero, linear_map.mem_ker], }, 
+  { simp only [map_tmul, linear_map.id_apply],
+    have mem1 : fAB a ∈ fAB.range := ⟨_, rfl⟩,
+    rw Module.exact_iff at eAB,
+    rw [eAB, linear_map.mem_ker] at mem1,
+    rw [linear_map.mem_ker, map_tmul, mem1, zero_tmul], },
+  { simp only [map_add],
+    exact submodule.add_mem _ hx hy, },
+end
+
+lemma right_exact.ker_subset_range :
+  (map fBC linear_map.id : B ⊗[R] M →ₗ[R] C ⊗[R] M).ker ≤
+  (map fAB linear_map.id : A ⊗[R] M →ₗ[R] B ⊗[R] M).range :=
+sorry
 
 lemma right_exact :
   exact 
@@ -58,6 +79,13 @@ lemma right_exact :
   exact 
     (by exact map fBC linear_map.id : Module.of R (B ⊗[R] M) ⟶ Module.of R (C ⊗[R] M))
     (0 : _ ⟶ (0 : Module.{u} R)) :=
-⟨sorry, by exactI @@right_exact.at3 R _ M _ _ A B C fAB fBC e0A eAB eC0⟩
+⟨begin 
+  rw Module.exact_iff,
+  refine le_antisymm _ _,
+  { intros x hx,
+    exact @@right_exact.range_subset_ker R _ M _ _ A B C fAB fBC e0A eAB eC0 hx, },
+  { intros x hx,
+    exact @@right_exact.ker_subset_range R _ M _ _ A B C fAB fBC e0A eAB eC0 hx, },
+end, by exactI @@right_exact.at3 R _ M _ _ A B C fAB fBC e0A eAB eC0⟩
 
 end tensor_product
