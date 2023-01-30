@@ -1,7 +1,8 @@
 import algebra.category.Module.basic
 import linear_algebra.tensor_product
 import linear_algebra.finsupp
-
+import category_theory.adjunction.limits
+import category_theory.limits.preserves.limits
 -- import .hom
 
 open_locale tensor_product
@@ -75,6 +76,7 @@ lemma tensor_bimodule.smul_tmul (s : S) (y : Y) (x : X) :
 
 end
 
+@[priority 100]
 instance tensor_product.bimodule : module S (Y ⊗[R] X) :=
 { smul := (•),
   one_smul := λ z,
@@ -364,6 +366,25 @@ def tensor_hom_adjunction : (tensor_functor R' S' X') ⊣ (hom_functor R' S' X')
   counit := tensor_hom_adjunction.counit _ _ _,
   hom_equiv_unit' := tensor_hom_adjunction.hom_equiv_unit _ _ _,
   hom_equiv_counit' := tensor_hom_adjunction.hom_equiv_counit _ _ _ }
+
+section
+
+instance : category_theory.is_left_adjoint (tensor_functor R' S' X') :=
+⟨_, tensor_hom_adjunction _ _ _⟩
+
+instance : category_theory.is_right_adjoint (hom_functor R' S' X') :=
+⟨_, tensor_hom_adjunction _ _ _⟩
+
+instance : category_theory.limits.preserves_colimits (tensor_functor R' S' X') :=
+category_theory.adjunction.left_adjoint_preserves_colimits (tensor_hom_adjunction R' S' X')
+
+instance : category_theory.limits.preserves_limits (hom_functor R' S' X') :=
+category_theory.adjunction.right_adjoint_preserves_limits (tensor_hom_adjunction R' S' X')
+
+instance : category_theory.functor.preserves_epimorphisms (tensor_functor R' S' X') :=
+infer_instance
+
+end
 
 end Module
 

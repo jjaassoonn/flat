@@ -267,6 +267,21 @@ linear_map.ext $ λ z, begin
   { simp only [map_add, hx, hy] }
 end
 
+example : true := trivial
+
+lemma tensor_embedding_inj_of_fg_inj 
+  (hinj : ∀ (I : ideal R), I.fg → function.injective (Module.tensor_embedding M I)) :
+  function.injective $ Module.tensor_embedding M I :=
+begin 
+  rw tensor_embedding_eq,
+  refine function.injective.comp _ (function.injective.comp (function.injective.comp _ _) _),
+  { refine module.lift_inj R (fg_subideal I) _ _ _ _ _,
+    exact λ i, hinj i.to_ideal i.fg, },
+  { exact linear_equiv.injective _, },
+  { exact linear_equiv.injective _, },
+  { exact function.injective_id, },
+end
+
 #exit
 
 open_locale tensor_product
