@@ -4,7 +4,7 @@
 
 For $R$ any commutative ring and $M$ an $R$-module,
 
-- let $S$ be a commutative ring and assume $M$ is an $R,S$-bimodule, then $(- \otimes M) \dashv \mathrm{Hom}(M, -)$ as functors between $R$-mods to $S$-mods. See [`adjunction_general.lean`](src/adjunction_general.lean#L363).
+- let $S$ be a commutative ring and assume $M$ is an $R,S$-bimodule, then $(- \otimes M) \dashv \mathrm{Hom}(M, -)$ as functors between $R$-mods to $S$-mods. See [`adjunction_general.lean`](src/adjunction_general.lean#L363). This also gives some small things like how to construct group homomorphisms $M \otimes_R N \to G$ where $G$ is some abelian group.
 
 - $- \otimes M$ is a right exact functor. Right-exactness is defined in terms of short exact sequences. See [`right_exact.lean`](src/right_exact.lean#L194). Since $(- \otimes M)$ is left adjoint, this should be automatic, but I didn't get the categorical argument working; so I just did everything by hand.
 
@@ -85,6 +85,12 @@ protected def fg_ideal : Prop :=
 
 Since tensoring is right exact, the equivalence between definition 1 and definition 2 is not hard to see. Using a lemma due to [Lambeck](doc/Lambek.pdf) that [injectivity of $M^*$ implies its flatness](src/flat.lean#117), one can see that [3 implies 2](src/flat.lean#204). Using a colimit argument, one can see that [4 implies 3](src/flat.lean#214). Other direction of implications are all easy. Thus the four definitions are [equivalent](src/flat.lean#223).
 
-## Acknowledgement
+## Things that are not great
+
+- Naming
+
+- universe level: $R$ and $M$ must be in the same universe. TODO: relax universe level.
+
+# Acknowledgement
 
 The proof here is an adptation of an outline due to Andrew Yang (@erdOne) on Zulip.
