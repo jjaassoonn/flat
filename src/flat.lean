@@ -2,8 +2,8 @@ import algebra.homology.exact
 import algebra.category.Module.abelian
 import category_theory.limits.shapes.images
 
+import .defs
 import .ideal_and_fg_ideal
-import .flat'
 import .right_exact
 
 

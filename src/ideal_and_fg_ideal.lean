@@ -1,7 +1,7 @@
 import algebra.direct_limit
 import algebra.category.fgModule.basic
 
-import .flat'
+import .defs
 import .direct_lim
 
 open_locale tensor_product
