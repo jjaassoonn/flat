@@ -84,3 +84,7 @@ protected def fg_ideal : Prop :=
 ```
 
 Since tensoring is right exact, the equivalence between definition 1 and definition 2 is not hard to see. Using a lemma due to [Lambeck](doc/Lambek.pdf) that [injectivity of $M^*$ implies its flatness](src/flat.lean#117), one can see that [3 implies 2](src/flat.lean#204). Using a colimit argument, one can see that [4 implies 3](src/flat.lean#214). Other direction of implications are all easy. Thus the four definitions are [equivalent](src/flat.lean#223).
+
+## Acknowledgement
+
+The proof here is an adptation of an outline due to Andrew Yang (@erdOne) on Zulip.
