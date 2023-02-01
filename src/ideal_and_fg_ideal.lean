@@ -8,7 +8,7 @@ open_locale tensor_product
 
 universes u v
 variables {R : Type u} [comm_ring R]
-variables (M : Type u) [add_comm_group M] [module R M]
+variables (M : Type v) [add_comm_group M] [module R M]
 
 variable (I : ideal R)
 
@@ -266,8 +266,6 @@ linear_map.ext $ λ z, begin
       tensor_product.lift.tmul, linear_map.id_apply, subtype.coe_mk], },
   { simp only [map_add, hx, hy] }
 end
-
-example : true := trivial
 
 lemma tensor_embedding_inj_of_fg_inj 
   (hinj : ∀ (I : ideal R), I.fg → function.injective (Module.tensor_embedding M I)) :

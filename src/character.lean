@@ -9,10 +9,10 @@ import .adjunction_general
 open category_theory
 open_locale tensor_product
 
-universes u
+universes u v w w'
 
 @[derive add_comm_group]
-def rat_circle : Type u :=
+def rat_circle : Type* :=
   ulift $ ℚ ⧸ (algebra_map ℤ ℚ).to_add_monoid_hom.range
 
 instance rat_circle.inj : injective (AddCommGroup.of rat_circle) := sorry
@@ -20,19 +20,19 @@ instance rat_circle.inj : injective (AddCommGroup.of rat_circle) := sorry
 section character_module
 
 variables {R : Type u} [comm_ring R] 
-variables (M : Type u) [add_comm_group M] [module R M]
-variables (N : Type u) [add_comm_group N] [module R N]
-variables (N' : Type u) [add_comm_group N'] [module R N']
+variables (M : Type w) [add_comm_group M] [module R M]
+variables (N : Type w) [add_comm_group N] [module R N]
+variables (N' : Type w) [add_comm_group N'] [module R N']
 
 @[derive add_comm_group]
-def character_module : Type u :=
-M →ₗ[ℤ] rat_circle.{u}
+def character_module : Type w :=
+M →ₗ[ℤ] rat_circle.{w}
 
-instance character_module.coe_to_fun : has_coe_to_fun (character_module M) (λ _, M → rat_circle.{u}) :=
+instance character_module.coe_to_fun : has_coe_to_fun (character_module M) (λ _, M → rat_circle) :=
 { coe := λ f, f.to_fun }
 
 instance character_module.add_monoid_hom_class :
-  add_monoid_hom_class (character_module M) M rat_circle.{u} :=
+  add_monoid_hom_class (character_module M) M rat_circle :=
 { coe := λ f, f,
   coe_injective' := λ f g h, linear_map.ext $ λ x, congr_fun h _,
   map_add := λ f, f.map_add,
@@ -41,7 +41,6 @@ instance character_module.add_monoid_hom_class :
 instance character_module.has_smul : has_smul R (character_module M) :=
 { smul := λ r f, 
   { to_fun := λ m, f (r • m),
-    -- map_zero' := by rw [smul_zero, map_zero],
     map_add' := λ x y, by rw [smul_add, map_add],
     map_smul' := λ z x, by rw [ring_hom.id_apply, ←f.map_smul, smul_comm] } }
 
@@ -104,7 +103,8 @@ lemma map_inj (L : M →ₗ[R] N) (hL : function.injective L) :
 λ g, ⟨begin 
   haveI : mono (AddCommGroup.of_hom L.to_add_monoid_hom) :=
     by rwa AddCommGroup.mono_iff_injective,
-  refine add_monoid_hom.to_int_linear_map (injective.factor_thru (AddCommGroup.of_hom $ g.to_add_monoid_hom) 
+  refine add_monoid_hom.to_int_linear_map 
+    (injective.factor_thru (AddCommGroup.of_hom g.to_add_monoid_hom) 
     (AddCommGroup.of_hom L.to_add_monoid_hom)),
 end, begin 
   ext x : 1,
@@ -117,7 +117,7 @@ end⟩
 
 end map
 
-def functor : (Module.{u} R)ᵒᵖ ⥤ Module.{u} R :=
+def functor : (Module.{max u v} R)ᵒᵖ ⥤ Module.{max u v} R :=
 { obj := λ M, Module.of R $ character_module M.unop,
   map := λ M N L, map L.unop,
   map_id' := λ M, map_id M.unop,

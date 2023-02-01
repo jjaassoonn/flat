@@ -10,30 +10,27 @@ import .right_exact
 open category_theory Module character_module
 open_locale tensor_product zero_object big_operators
 
-universes u
+universes u v
 
 namespace module
 
 variables (R : Type u) [comm_ring R] 
-variables (M : Type u) [add_comm_group M] [module R M]
+variables (M : Type (max u v)) [add_comm_group M] [module R M]
 
 namespace flat
 
 section defs
 
--- instance hmmm0 : Π (N : Module.{u} R), module R (N ⊗[R] M) :=
--- λ _, tensor_product.left_module
-
 /--
 0 ---> N₁ ----> N₂ ----> N₃ ----> 0
 -/
 protected def ses : Prop :=
-∀ ⦃N1 N2 N3 : Module.{u u} R⦄ (l12 : N1 ⟶ N2) (l23 : N2 ⟶ N3)
-  (he1 : exact (0 : (0 : Module.{u} R) ⟶ N1) l12)
+∀ ⦃N1 N2 N3 : Module.{max u v} R⦄ (l12 : N1 ⟶ N2) (l23 : N2 ⟶ N3)
+  (he1 : exact (0 : (0 : Module R) ⟶ N1) l12)
   (he2 : exact l12 l23)
-  (he3 : exact l23 (0 : N3 ⟶ (0 : Module.{u} R))),
+  (he3 : exact l23 (0 : N3 ⟶ 0)),
 exact 
-  (0 : (0 : Module.{u} R) ⟶ Module.of R (N1 ⊗[R] M))  
+  (0 : 0 ⟶ Module.of R (N1 ⊗[R] M))  
   (by exact tensor_product.map l12 linear_map.id : 
     Module.of R (N1 ⊗[R] M) ⟶ Module.of R (N2 ⊗[R] M)) ∧
 exact 
@@ -47,7 +44,7 @@ exact
   (0 : _ ⟶ 0)
 
 protected def inj : Prop :=
-∀ ⦃N N' : Module.{u} R⦄ (L : N ⟶ N'), 
+∀ ⦃N N' : Module.{max u v} R⦄ (L : N ⟶ N'), 
   function.injective L →
   function.injective (tensor_product.map L (linear_map.id : M →ₗ[R] M)) 
 
@@ -94,7 +91,7 @@ lemma ideal_of_fg_ideal (H : module.flat.fg_ideal R M) : module.flat.ideal R M :
 section inj_of_ideal
 
 lemma module.Baer_iff : 
-  module.Baer.{u u} R M ↔ 
+  module.Baer R M ↔ 
   ∀ I, function.surjective (restrict_to_ideal R M I) :=
 begin 
   split,
@@ -126,7 +123,7 @@ begin
   by_cases rid : z = 0, 
   { exact rid },
   exfalso,
-  obtain ⟨g, hg⟩ := character_module.non_zero.{u} (A ⊗[R] M) rid,
+  obtain ⟨g, hg⟩ := character_module.non_zero (A ⊗[R] M) rid,
   set f : A →ₗ[R] (character_module M) := 
   { to_fun := λ a, { to_fun := λ m, g (a ⊗ₜ m), map_add' := _, map_smul' := _ }, 
     map_add' := _, map_smul' := _ } with f_eq,
@@ -154,8 +151,8 @@ begin
   refl,
 end
 
-lemma flat'_of_baer : module.Baer.{u u} R (character_module.{u} M) → module.flat.inj R M := 
-λ h, Lambek _ _ $ (module.injective_iff_injective_object.{u u} R 
+lemma flat'_of_baer : module.Baer R (character_module M) → module.flat.inj R M := 
+λ h, Lambek _ _ $ (module.injective_iff_injective_object R 
     (character_module M)).mp (module.Baer.injective h)
 
 instance aux1 : module R (R →ₗ[R] M) := linear_map.module
@@ -172,30 +169,24 @@ lemma surj1 : function.surjective (character_module.map (tensor_embedding M I)) 
 character_module.map_inj _ hI
 
 lemma injective_character (hIs : ∀ (I : ideal R), function.injective (tensor_embedding M I)) : 
-  module.Baer.{u u} R (character_module M) :=
+  module.Baer R (character_module M) :=
 begin 
   rw module.Baer_iff,
   intros I l,
-  obtain ⟨F, hF⟩ := surj1 _ _ (hIs I) (character_module.hom_equiv _ _ l),
-  refine ⟨(character_module.hom_equiv _ _).symm F, _⟩,
+  obtain ⟨F, hF⟩ := surj1 _ _ (hIs I) (character_module.hom_equiv _ _ ⟨_, _, _⟩),
+  work_on_goal 2 { refine λ (i : ulift I), l i.down, },
+  work_on_goal 2 { intros, convert map_add l _ _, },
+  work_on_goal 2 { intros, convert map_smul l _ _, },
+  refine ⟨⟨λ r, (character_module.hom_equiv _ _).symm F (ulift.up r), _, _⟩, _⟩,
+  { intros, convert map_add _ _ _; refl, },
+  { intros, convert map_smul _ _ _; refl, },
   ext i m : 2,
-  rw restrict_to_ideal_apply,
-  rw linear_map.dom_restrict_apply,
-  rw character_module.hom_equiv,
-  rw equiv.coe_fn_symm_mk,
-  rw linear_map.coe_mk,
-  rw linear_map.coe_mk,
-  have EQ := fun_like.congr_fun hF (i ⊗ₜ m),
-  rw character_module.map_apply at EQ,
-  rw linear_map.coe_mk at EQ,
-  rw tensor_product.map_tmul at EQ,
-  rw linear_map.coe_mk at EQ,
-  rw linear_map.coe_mk at EQ,
-  rw id at EQ,
-  rw EQ,
-  rw character_module.hom_equiv_apply,
-  rw add_monoid_hom.coe_to_int_linear_map,
-  rw tensor_product.to_add_comm_group'.apply_tmul,
+  simp only [restrict_to_ideal_apply, linear_map.dom_restrict_apply, character_module.hom_equiv, 
+    equiv.coe_fn_symm_mk, linear_map.coe_mk, linear_map.coe_mk],
+  have EQ := fun_like.congr_fun hF ((ulift.up i) ⊗ₜ m),
+  simpa only [character_module.map_apply, linear_map.coe_mk, tensor_product.map_tmul, id, 
+    character_module.hom_equiv_apply, add_monoid_hom.coe_to_int_linear_map, 
+    tensor_product.to_add_comm_group'.apply_tmul] using EQ,
 end
 
 /--
@@ -214,10 +205,13 @@ end inj_of_ideal
 lemma fg_ideal_of_inj (H : module.flat.inj R M) : module.flat.fg_ideal R M :=
 begin 
   intros I hI,
-  refine @H (Module.of R $ I) (Module.of R R) ⟨λ (i : I), (i : R), λ _ _, rfl, λ _ _, rfl⟩ _,
+  refine @H ⟨ulift.{max u v} I⟩ ⟨ulift.{max u v} R⟩ ⟨λ i, ulift.up (i.down), λ _ _, rfl, λ _ _, rfl⟩ 
+    _,
   intros z z' h,
   ext1,
-  exact h,
+  rw ulift.ext_iff at h,
+  simp only [linear_map.coe_mk] at h,
+  exact_mod_cast h,
 end
 
 lemma equiv_defs : tfae 

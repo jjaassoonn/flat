@@ -5,7 +5,7 @@ import algebra.module.injective
 import .character
 import .adjunction_general
 
-universes u
+universes u v
 
 open_locale tensor_product
 open category_theory character_module
@@ -13,7 +13,7 @@ open category_theory character_module
 namespace Module
 
 variables (R : Type u) [comm_ring R] 
-variables (M : Type u) [add_comm_group M] [module R M]
+variables (M : Type (max u v)) [add_comm_group M] [module R M]
 
 instance aux1 : module R (R →ₗ[R] M) := linear_map.module
 instance aux2 (I : ideal R) : module R (I →ₗ[R] M) := linear_map.module
@@ -45,9 +45,9 @@ section
 variables {R}
 
 @[reducible]
-def tensor_embedding (I : ideal R) : (I ⊗[R] M) →ₗ[R] (R ⊗[R] M) :=
+def tensor_embedding (I : ideal R) : (ulift.{max u v} I ⊗[R] M) →ₗ[R] (ulift.{max v u} R ⊗[R] M) :=
 tensor_product.map 
-{ to_fun := coe,
+{ to_fun := λ i, ulift.up (i.down : R),
   map_add' := λ _ _, rfl,
   map_smul' := λ _ _, rfl } 
 { to_fun := id,
