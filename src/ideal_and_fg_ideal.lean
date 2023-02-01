@@ -8,7 +8,7 @@ open_locale tensor_product
 
 universes u v
 variables {R : Type u} [comm_ring R]
-variables (M : Type v) [add_comm_group M] [module R M]
+variables (M : Type u) [add_comm_group M] [module R M]
 
 variable (I : ideal R)
 

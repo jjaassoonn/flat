@@ -89,7 +89,7 @@ Since tensoring is right exact, the equivalence between definition 1 and definit
 
 - Naming and documentation.
 
-- Universe level: $R$ and $M$ must be in the same universe. This is because we are latter considering $I \otimes M \to R \otimes M$, so it makes sense to let $I, R, M$ be in the same universe. This in principle can be generalized to $R : \mathsf{Type}~u$ and $M : \mathsf{Type}~\mathrm{max}(u, v)$.
+- Universe level: $R$ and $M$ must be in the same universe. This is because we are latter considering $I \otimes M \to R \otimes M$, so it makes sense to let $I, R, M$ be in the same universe. This in principle can be generalized to $R : \mathsf{Type}_u$ and $M : \mathsf{Type}_{\mathrm{max}(u, v)}$.
 
 # Acknowledgement
 
