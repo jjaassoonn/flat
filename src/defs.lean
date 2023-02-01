@@ -13,7 +13,7 @@ open category_theory character_module
 namespace Module
 
 variables (R : Type u) [comm_ring R] 
-variables (M : Type (max u v)) [add_comm_group M] [module R M]
+variables (M : Type v) [add_comm_group M] [module R M]
 
 instance aux1 : module R (R →ₗ[R] M) := linear_map.module
 instance aux2 (I : ideal R) : module R (I →ₗ[R] M) := linear_map.module
@@ -45,14 +45,12 @@ section
 variables {R}
 
 @[reducible]
-def tensor_embedding (I : ideal R) : (ulift.{max u v} I ⊗[R] M) →ₗ[R] (ulift.{max v u} R ⊗[R] M) :=
+def tensor_embedding (I : ideal R) : (I ⊗[R] M) →ₗ[R] (R ⊗[R] M) :=
 tensor_product.map 
-{ to_fun := λ i, ulift.up (i.down : R),
+{ to_fun := coe,
   map_add' := λ _ _, rfl,
   map_smul' := λ _ _, rfl } 
-{ to_fun := id,
-  map_add' := λ _ _, rfl,
-  map_smul' := λ _ _, rfl }
+linear_map.id
 
 end
 

@@ -60,7 +60,7 @@ exact
   (0 : _ ⟶ 0)
 ```
 
-2. in terms of preserving injective functions:
+2.in terms of preserving injective functions:
 
 ```lean
 protected def inj : Prop :=
@@ -69,14 +69,14 @@ protected def inj : Prop :=
   function.injective (tensor_product.map L (linear_map.id : M →ₗ[R] M)) 
 ```
 
-3. in terms of ideals:
+3.in terms of ideals:
 
 ```lean
 protected def ideal : Prop :=
 ∀ (I : ideal R), function.injective (tensor_embedding M I)
 ```
 
-4. in terms of finitely generated ideals:
+4.in terms of finitely generated ideals:
 
 ```lean
 protected def fg_ideal : Prop :=
@@ -87,9 +87,9 @@ Since tensoring is right exact, the equivalence between definition 1 and definit
 
 ## Things that are not great
 
-- Naming
+- Naming and documentation.
 
-- universe level: $R$ and $M$ must be in the same universe. TODO: relax universe level.
+- Universe level: $R$ and $M$ must be in the same universe. This is because we are latter considering $I \otimes M \to R \otimes M$, so it makes sense to let $I, R, M$ be in the same universe. This in principle can be generalized to $R : \mathsf{Type}~u$ and $M : \mathsf{Type}~\mathrm{max}(u, v)$.
 
 # Acknowledgement
 

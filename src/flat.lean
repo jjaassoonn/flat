@@ -10,12 +10,12 @@ import .right_exact
 open category_theory Module character_module
 open_locale tensor_product zero_object big_operators
 
-universes u v
+universe u
 
 namespace module
 
 variables (R : Type u) [comm_ring R] 
-variables (M : Type (max u v)) [add_comm_group M] [module R M]
+variables (M : Type u) [add_comm_group M] [module R M]
 
 namespace flat
 
@@ -25,7 +25,7 @@ section defs
 0 ---> N₁ ----> N₂ ----> N₃ ----> 0
 -/
 protected def ses : Prop :=
-∀ ⦃N1 N2 N3 : Module.{max u v} R⦄ (l12 : N1 ⟶ N2) (l23 : N2 ⟶ N3)
+∀ ⦃N1 N2 N3 : Module.{u} R⦄ (l12 : N1 ⟶ N2) (l23 : N2 ⟶ N3)
   (he1 : exact (0 : (0 : Module R) ⟶ N1) l12)
   (he2 : exact l12 l23)
   (he3 : exact l23 (0 : N3 ⟶ 0)),
@@ -44,7 +44,7 @@ exact
   (0 : _ ⟶ 0)
 
 protected def inj : Prop :=
-∀ ⦃N N' : Module.{max u v} R⦄ (L : N ⟶ N'), 
+∀ ⦃N N' : Module.{u} R⦄ (L : N ⟶ N'), 
   function.injective L →
   function.injective (tensor_product.map L (linear_map.id : M →ₗ[R] M)) 
 
@@ -91,7 +91,7 @@ lemma ideal_of_fg_ideal (H : module.flat.fg_ideal R M) : module.flat.ideal R M :
 section inj_of_ideal
 
 lemma module.Baer_iff : 
-  module.Baer R M ↔ 
+  module.Baer.{u u} R M ↔ 
   ∀ I, function.surjective (restrict_to_ideal R M I) :=
 begin 
   split,
@@ -151,12 +151,12 @@ begin
   refl,
 end
 
-lemma flat'_of_baer : module.Baer R (character_module M) → module.flat.inj R M := 
-λ h, Lambek _ _ $ (module.injective_iff_injective_object R 
+lemma flat'_of_baer : module.Baer.{u u} R (character_module M) → module.flat.inj R M := 
+λ h, Lambek _ _ $ (module.injective_iff_injective_object.{u u} R 
     (character_module M)).mp (module.Baer.injective h)
 
-instance aux1 : module R (R →ₗ[R] M) := linear_map.module
-instance aux2 (I : ideal R) : module R (I →ₗ[R] M) := linear_map.module
+-- instance aux1 : module R (R →ₗ[R] M) := linear_map.module
+-- instance aux2 (I : ideal R) : module R (I →ₗ[R] M) := linear_map.module
 
 lemma flat'_of_surj : 
   (∀ I, function.surjective (restrict_to_ideal R (character_module M) I)) → module.flat.inj R M := 
@@ -169,23 +169,17 @@ lemma surj1 : function.surjective (character_module.map (tensor_embedding M I)) 
 character_module.map_inj _ hI
 
 lemma injective_character (hIs : ∀ (I : ideal R), function.injective (tensor_embedding M I)) : 
-  module.Baer R (character_module M) :=
+  module.Baer.{u u} R (character_module M) :=
 begin 
   rw module.Baer_iff,
   intros I l,
-  obtain ⟨F, hF⟩ := surj1 _ _ (hIs I) (character_module.hom_equiv _ _ ⟨_, _, _⟩),
-  work_on_goal 2 { refine λ (i : ulift I), l i.down, },
-  work_on_goal 2 { intros, convert map_add l _ _, },
-  work_on_goal 2 { intros, convert map_smul l _ _, },
-  refine ⟨⟨λ r, (character_module.hom_equiv _ _).symm F (ulift.up r), _, _⟩, _⟩,
-  { intros, convert map_add _ _ _; refl, },
-  { intros, convert map_smul _ _ _; refl, },
+  obtain ⟨F, hF⟩ := surj1 _ _ (hIs I) (character_module.hom_equiv _ _ l),
+  refine ⟨(character_module.hom_equiv _ _).symm F, _⟩,
   ext i m : 2,
   simp only [restrict_to_ideal_apply, linear_map.dom_restrict_apply, character_module.hom_equiv, 
-    equiv.coe_fn_symm_mk, linear_map.coe_mk, linear_map.coe_mk],
-  have EQ := fun_like.congr_fun hF ((ulift.up i) ⊗ₜ m),
-  simpa only [character_module.map_apply, linear_map.coe_mk, tensor_product.map_tmul, id, 
-    character_module.hom_equiv_apply, add_monoid_hom.coe_to_int_linear_map, 
+    equiv.coe_fn_symm_mk, linear_map.coe_mk],
+  have EQ := fun_like.congr_fun hF (i ⊗ₜ m),
+  simpa only [character_module.hom_equiv_apply, add_monoid_hom.coe_to_int_linear_map, 
     tensor_product.to_add_comm_group'.apply_tmul] using EQ,
 end
 
@@ -205,13 +199,10 @@ end inj_of_ideal
 lemma fg_ideal_of_inj (H : module.flat.inj R M) : module.flat.fg_ideal R M :=
 begin 
   intros I hI,
-  refine @H ⟨ulift.{max u v} I⟩ ⟨ulift.{max u v} R⟩ ⟨λ i, ulift.up (i.down), λ _ _, rfl, λ _ _, rfl⟩ 
-    _,
+  refine @H ⟨I⟩ ⟨R⟩ ⟨coe, λ _ _, rfl, λ _ _, rfl⟩ _,
   intros z z' h,
   ext1,
-  rw ulift.ext_iff at h,
-  simp only [linear_map.coe_mk] at h,
-  exact_mod_cast h,
+  simpa only [linear_map.coe_mk] using h,
 end
 
 lemma equiv_defs : tfae 
