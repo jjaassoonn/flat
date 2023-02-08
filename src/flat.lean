@@ -87,7 +87,7 @@ begin
     rw concrete_category.mono_iff_injective_of_preserves_pullback at he1,
     exact H l12 he1, },
   
-  have res := @@tensor_product.right_exact R _ M _ _ N1 N2 N3 l12 l23 he1 he2 he3,
+  have res := @@tensor_product.right_exact R _ M _ _ N1 N2 N3 l12 l23 he2 he3,
   refine ⟨_, res⟩,
   { rw ←mono_iff_exact_zero_left,
     rwa concrete_category.mono_iff_injective_of_preserves_pullback, },
@@ -227,46 +227,14 @@ begin
   simpa only [linear_map.coe_mk] using h,
 end
 
-lemma ses_of_exact (H : module.flat.exact R M) :
-  module.flat.ses R M :=
-begin
-  intros N1 N2 N3 l12 l23 he1 he2 he3,
-  have res := @@tensor_product.right_exact R _ M _ _ N1 N2 N3 l12 l23 he1 he2 he3,
-  refine ⟨_, res⟩,
-  have H' := @H _ _ _ _ _ he1,
-  have eq1 : (tensor_product.map 0 linear_map.id : 
-    Module.of R ((0 : Module.{u} R) ⊗ M) ⟶ Module.of R (N1 ⊗ M)) = 
-    (_ : Module.of R ((0 : Module.{u} R) ⊗ M) ⟶ 0) ≫ (0 : (0 : Module.{u} R) ⟶ Module.of R (N1 ⊗ M)),
-  work_on_goal 3 
-  { refine tensor_product.lift 0, },
-  { refine linear_map.ext (λ z, z.induction_on _ (λ z m, _) (λ x y hx hy, _)), 
-    { simp only [map_zero] },
-    { simp only [tensor_product.map_tmul, tensor_product.lift.tmul, 
-        linear_map.zero_apply, tensor_product.zero_tmul, comp_apply], },
-    { rw [map_add, hx, hy, map_add], }, },
-  { rw eq1 at H',
-    refine exact_epi_comp H',
-    { exact 0, },
-    rw Module.epi_iff_surjective,
-    refine λ y, ⟨0, (eq.symm _ : 0 = y)⟩,
-    induction y using tensor_product.induction_on with z m x y hx hy,
-    { refl },
-    { rw [show z = 0, from _, tensor_product.zero_tmul],
-      haveI : subsingleton (0 : Module.{u} R),
-      { let i : (0 : Module.{u} R) ≅ (Module.of R punit) := 
-        ⟨0, 0, has_zero_object.from_zero_ext _ _, _⟩,
-        work_on_goal 2 
-        { rw comp_zero, ext1,
-          rw [category_theory.id_apply] },
-        fconstructor,
-        intros x y,
-        apply_fun i.hom,
-        work_on_goal 2 { exact concrete_category.injective_of_mono_of_preserves_pullback i.hom, },
-        { refl, },
-        { exact subsingleton.elim _ _, }, },
-      exact subsingleton.elim _ _, },
-    { rw [hx, hy, add_zero] } },
-end
+namespace exact_of_ses
+
+def ker_iso ⦃N1 N2 N3 : Module.{u} R⦄
+  (l12 : N1 ⟶ N2) (l23 : N2 ⟶ N3) (he : exact l12 l23) :
+  (l23.ker ⊗[R] M)  →ₗ[R] (tensor_product.map l23 linear_map.id : (N2 ⊗[R] M) →ₗ[R] (N3 ⊗[R] M)).ker :=
+tensor_product.lift _
+
+end exact_of_ses
 
 lemma exact_of_ses (H : module.flat.ses R M) :
   module.flat.exact R M :=
@@ -301,17 +269,46 @@ begin
     },
 end
 
+
+lemma inj_of_exact (H : module.flat.exact R M) :
+  module.flat.inj R M :=
+λ N1 N2 l h,
+begin 
+  have e0 : exact (0 : (0 : Module.{u} R) ⟶ _) l,
+  { rw ←Module.mono_iff_injective at h,
+    resetI,
+    apply exact_zero_left_of_mono, },
+  specialize H (0 : (0 : Module.{u} R) ⟶ N1) l e0,
+  have eq1 : (tensor_product.map 0 linear_map.id : 
+    Module.of R ((0 : Module.{u} R) ⊗ M) ⟶ Module.of R (N1 ⊗ M)) = 
+    (_ : Module.of R ((0 : Module.{u} R) ⊗ M) ⟶ 0) ≫ (0 : (0 : Module.{u} R) ⟶ Module.of R (N1 ⊗ M)),
+  work_on_goal 3 
+  { refine tensor_product.lift 0, },
+  { refine linear_map.ext (λ z, z.induction_on _ (λ z m, _) (λ x y hx hy, _)), 
+    { simp only [map_zero] },
+    { simp only [tensor_product.map_tmul, tensor_product.lift.tmul, 
+        linear_map.zero_apply, tensor_product.zero_tmul, comp_apply], },
+    { rw [map_add, hx, hy, map_add], }, },
+  rw eq1 at H,
+  rw abelian.exact_epi_comp_iff at H,
+  rw ←mono_iff_exact_zero_left at H,
+  rwa Module.mono_iff_injective at H,
+end
+
 lemma equiv_defs : tfae 
   [module.flat.ses R M
   , module.flat.inj R M
   , module.flat.ideal R M
-  , module.flat.fg_ideal R M] :=
+  , module.flat.fg_ideal R M
+  , module.flat.exact R M] :=
 begin 
   tfae_have : 1 → 2, { apply inj_of_ses },
   tfae_have : 2 → 1, { apply ses_of_inj },
   tfae_have : 3 → 2, { apply inj_of_ideal },
   tfae_have : 4 → 3, { apply ideal_of_fg_ideal },
   tfae_have : 2 → 4, { apply fg_ideal_of_inj },
+  tfae_have : 5 → 2, { apply inj_of_exact },
+  tfae_have : 1 → 5, { apply exact_of_ses },
   tfae_finish,
 end
 

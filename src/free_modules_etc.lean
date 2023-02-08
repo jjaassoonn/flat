@@ -108,8 +108,10 @@ Module.Module_enough_projectives.{u u}
 instance has_projective_resolutions : has_projective_resolutions (Module.{u} R) := 
 { out := λ Z, ⟨nonempty.intro $ Z.free_res⟩ }
 
-def higher_Tor'_zero_of_flat (h : module.flat.exact R M) (N : Module.{u} R) (n : ℕ) (hn : 0 < n) : 
-  ((Tor' (Module.{u} R) n).obj N).obj M ≅ 0 :=
+def higher_Tor'_zero_of_flat (h : module.flat.exact R M) : 
+  ∀ (n : ℕ) (hn : 0 < n) (N : Module.{u} R), 
+    ((Tor' (Module.{u} R) n).obj N).obj M ≅ 0 :=
+λ n hn N,
 begin 
   dsimp only [Tor', functor.flip],
   refine functor.left_derived_obj_iso (tensor_right M) n N.free_res ≪≫ _,
@@ -138,8 +140,26 @@ begin
   { linarith, },
 end
 
-def first_Tor'_zero_of_flat (h : module.flat.exact R M) (N : Module.{u} R) : 
-  ((Tor' (Module.{u} R) 1).obj N).obj M ≅ 0 :=
-M.higher_Tor'_zero_of_flat h N 1 (by linarith)
+def first_Tor'_zero_of_flat (h : module.flat.exact R M) :
+  ∀ (N : Module.{u} R), ((Tor' (Module.{u} R) 1).obj N).obj M ≅ 0 :=
+λ _, M.higher_Tor'_zero_of_flat h 1 (by linarith) _
+
+def first_Tor'_ideal_zero_of_flat (h : module.flat.exact R M) :
+  ∀ (I : ideal R), ((Tor' (Module.{u} R) 1).obj (Module.of R (R ⧸ I))).obj M ≅ 0 :=
+λ _, M.first_Tor'_zero_of_flat h _
+
+def first_Tor'_fg_ideal_zero_of_flat (h : module.flat.exact R M) :
+  ∀  (I : ideal R) (hI : I.fg), 
+    ((Tor' (Module.{u} R) 1).obj (Module.of R (R ⧸ I))).obj M ≅ 0 :=
+λ _ _, M.first_Tor'_zero_of_flat h _
+
+-- needs long exact sequences
+def flat_of_first_Tor'_fg_ideal_zero (h : ∀  (I : ideal R) (hI : I.fg), 
+  ((Tor' (Module.{u} R) 1).obj (Module.of R (R ⧸ I))).obj M ≅ 0) :
+  module.flat.fg_ideal R M :=
+λ I hI, 
+begin 
+  sorry
+end
 
 end Module
