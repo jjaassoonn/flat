@@ -1,5 +1,5 @@
 import linear_algebra.tensor_product
-import algebra.category.Module.abelian
+import algebra.category.Module.monoidal
 import algebra.homology.exact
 
 import .adjunction_general
@@ -16,12 +16,12 @@ variables (M : Type v) [add_comm_group M] [module R M]
 variables (A B C : Module.{v} R)
 
 variables (fAB : A ⟶ B) (fBC : B ⟶ C)
-variables [e0A : exact (0 : (0 : Module.{v} R) ⟶ _) fAB] 
-variables [eAB : exact fAB fBC] [eC0 : exact fBC (0 : _ ⟶ (0 : Module.{v} R))]
+variables (e0A : exact (0 : (0 : Module.{v} R) ⟶ _) fAB) 
+variables (eAB : exact fAB fBC) (eC0 : exact fBC (0 : _ ⟶ (0 : Module.{v} R)))
 
-include fAB fBC e0A eAB eC0
+-- include fAB fBC e0A eAB eC0
 
-/--
+/-
 ```
 0 -----> A ---fAB---> B ---fBC---> C ----> 0
 ``` 
@@ -32,6 +32,10 @@ A ⊗ M --> B ⊗ M ---> C ⊗ M ----> 0
 ```
 is exact
 -/
+
+section
+
+include fBC eC0
 
 lemma right_exact.at3 :
   exact 
@@ -58,15 +62,20 @@ begin
   rwa Module.epi_iff_surjective at e,
 end
 
-@[reducible]
-noncomputable def β_aux' : C → B :=
-λ c, (@@right_exact.surj R _ A B C fAB fBC e0A eAB eC0 c).some
+end
 
-local notation `β_aux` := @@β_aux' R _ A B C fAB fBC e0A eAB eC0 
+@[reducible] noncomputable def β_aux' : C → B :=
+λ c, (@@right_exact.surj R _ B C fBC eC0 c).some
+
+local notation `β_aux` := @@β_aux' R _ B C fBC eC0 
 
 lemma β_aux_spec (z) : 
   fBC (β_aux z) = z := 
-(@@right_exact.surj R _ A B C fAB fBC e0A eAB eC0 z).some_spec
+(@@right_exact.surj R _ B C fBC eC0 z).some_spec
+
+section
+
+include eAB
 
 lemma right_exact.range_subset_ker :
   (map fAB linear_map.id : A ⊗[R] M →ₗ[R] B ⊗[R] M).range ≤ 
@@ -84,6 +93,8 @@ begin
     exact submodule.add_mem _ hx hy, },
 end
 
+end
+
 namespace right_exact.ker_subset_range
 
 local notation `quotient_space` := (B ⊗[R] M) ⧸ (map fAB linear_map.id : A ⊗[R] M →ₗ[R] B ⊗[R] M).range
@@ -92,14 +103,17 @@ local notation `quotient_space` := (B ⊗[R] M) ⧸ (map fAB linear_map.id : A �
 def π' : B ⊗[R] M →ₗ[R] quotient_space :=
 submodule.mkq _
 
-local notation `π` := @@π' R _ M _ _ A B C fAB fBC e0A eAB eC0
+local notation `π` := π' R M A B fAB
 
 @[reducible]
 def α' : quotient_space →ₗ[R] C ⊗[R] M :=
-submodule.liftq _ (map fBC linear_map.id) $ λ x hx, @@right_exact.range_subset_ker _ _ _ _ _ _ _ 
-  _ _ _ e0A eAB eC0 hx
+submodule.liftq _ (map fBC linear_map.id) $ λ x hx, right_exact.range_subset_ker R M A B C fAB fBC eAB hx
 
-local notation `α` := @α' R _ M _ _ A B C fAB fBC e0A eAB eC0
+local notation `α` := @α' R _ M _ _ A B C fAB fBC eAB
+
+section
+
+include eAB
 
 lemma β_wd ⦃b b' : B⦄ (h : fBC b = fBC b') (m : M) :
   π (b ⊗ₜ m) = π (b' ⊗ₜ m) :=
@@ -129,17 +143,19 @@ tensor_product.lift
   begin 
     simp only [linear_map.coe_mk, linear_map.add_apply],
     rw [←map_add, ←add_tmul],
-    apply β_wd,
+    apply β_wd R M _ _ _ _ _ eAB,
     simp only [map_add, β_aux_spec],
   end,
   map_smul' := λ r c', linear_map.ext $ λ m, 
   begin 
     simp only [linear_map.coe_mk, ring_hom.id_apply, linear_map.smul_apply, ←π .map_smul],
-    apply β_wd,
+    apply β_wd R M _ _ _ _ _ eAB,
     rw [linear_map.map_smul, β_aux_spec, β_aux_spec],
   end }
 
-local notation `β` := @β' R _ M _ _ A B C fAB fBC e0A eAB eC0
+end
+
+local notation `β` := @β' R _ M _ _ A B C fAB fBC eAB eC0
 
 lemma αβ : α .comp β  = linear_map.id :=
 linear_map.ext $ λ z, begin 
@@ -160,10 +176,14 @@ begin
   induction z using tensor_product.induction_on with c m x y hx hy,
   { simpa only [map_zero], },
   { simp only [map_tmul, lift.tmul, linear_map.coe_mk, linear_map.id_apply],
-    apply β_wd,
+    apply β_wd R M _ _ _ _ _ eAB,
     rw β_aux_spec, },
   { simpa only [map_add, hx, hy], },
 end
+
+section
+
+include eAB eC0
 
 lemma result (z : B ⊗[R] M) (hz : z ∈ (map fBC linear_map.id : B ⊗[R] M →ₗ[R] C ⊗[R] M).ker) :
   z ∈ (map fAB linear_map.id : A ⊗[R] M →ₗ[R] B ⊗[R] M).range :=
@@ -176,12 +196,16 @@ begin
   exact EQ,
 end
 
+end
+
 end right_exact.ker_subset_range
+
+include eAB eC0
 
 lemma right_exact.ker_subset_range :
   (map fBC linear_map.id : B ⊗[R] M →ₗ[R] C ⊗[R] M).ker ≤
   (map fAB linear_map.id : A ⊗[R] M →ₗ[R] B ⊗[R] M).range :=
-@right_exact.ker_subset_range.result R _ M _ _ A B C _ _ e0A eAB eC0
+@right_exact.ker_subset_range.result R _ M _ _ A B C fAB fBC eAB eC0
 
 lemma right_exact :
   exact 
@@ -194,9 +218,9 @@ lemma right_exact :
   rw Module.exact_iff,
   refine le_antisymm _ _,
   { intros x hx,
-    exact @@right_exact.range_subset_ker R _ M _ _ A B C fAB fBC e0A eAB eC0 hx, },
+    exact @@right_exact.range_subset_ker R _ M _ _ A B C fAB fBC eAB hx, },
   { intros x hx,
-    exact @@right_exact.ker_subset_range R _ M _ _ A B C fAB fBC e0A eAB eC0 hx, },
-end, by exactI @@right_exact.at3 R _ M _ _ A B C fAB fBC e0A eAB eC0⟩
+    exact @@right_exact.ker_subset_range R _ M _ _ A B C fAB fBC eAB eC0 hx, },
+end, by exactI @@right_exact.at3 R _ M _ _ B C fBC eC0⟩
 
 end tensor_product

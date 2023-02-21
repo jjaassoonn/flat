@@ -5,9 +5,11 @@ import category_theory.limits.shapes.images
 import .defs
 import .ideal_and_fg_ideal
 import .right_exact
+import .ses
 
 
-open category_theory category_theory.limits Module character_module
+open category_theory category_theory.limits category_theory.monoidal_category  
+open Module character_module
 open_locale tensor_product zero_object big_operators
 
 universe u
@@ -24,24 +26,9 @@ section defs
 /--
 0 ---> N₁ ----> N₂ ----> N₃ ----> 0
 -/
+@[reducible]
 protected def ses : Prop :=
-∀ ⦃N1 N2 N3 : Module.{u} R⦄ (l12 : N1 ⟶ N2) (l23 : N2 ⟶ N3)
-  (he1 : exact (0 : (0 : Module R) ⟶ N1) l12)
-  (he2 : exact l12 l23)
-  (he3 : exact l23 (0 : N3 ⟶ 0)),
-exact 
-  (0 : 0 ⟶ Module.of R (N1 ⊗[R] M))  
-  (by exact tensor_product.map l12 linear_map.id : 
-    Module.of R (N1 ⊗[R] M) ⟶ Module.of R (N2 ⊗[R] M)) ∧
-exact 
-  (by exact tensor_product.map l12 linear_map.id : 
-    Module.of R (N1 ⊗[R] M) ⟶ Module.of R (N2 ⊗[R] M)) 
-  (by exact tensor_product.map l23 linear_map.id : 
-    Module.of R (N2 ⊗[R] M) ⟶ Module.of R (N3 ⊗[R] M)) ∧
-exact
-  (by exact tensor_product.map l23 linear_map.id : 
-    Module.of R (N2 ⊗[R] M) ⟶ Module.of R (N3 ⊗[R] M))
-  (0 : _ ⟶ 0)
+(tensor_right (Module.of R M)).is_exact
 
 /--
     l12      l23
@@ -59,16 +46,13 @@ N1 ⊗ M --------> N2 --------> N3
 protected def exact : Prop :=
 ∀ ⦃N1 N2 N3 : Module.{u} R⦄ (l12 : N1 ⟶ N2) (l23 : N2 ⟶ N3)
   (he : exact l12 l23),
-  exact 
-  (by exact tensor_product.map l12 linear_map.id : 
-    Module.of R (N1 ⊗[R] M) ⟶ Module.of R (N2 ⊗[R] M)) 
-  (by exact tensor_product.map l23 linear_map.id : 
-    Module.of R (N2 ⊗[R] M) ⟶ Module.of R (N3 ⊗[R] M))
+  exact ((tensor_right $ Module.of R M).map l12)
+    ((tensor_right $ Module.of R M).map l23)
 
 protected def inj : Prop :=
 ∀ ⦃N N' : Module.{u} R⦄ (L : N ⟶ N'), 
   function.injective L →
-  function.injective (tensor_product.map L (linear_map.id : M →ₗ[R] M)) 
+  function.injective ((tensor_right (Module.of R M)).map L) 
 
 protected def ideal : Prop :=
 ∀ (I : ideal R), function.injective (tensor_embedding M I)
@@ -80,29 +64,30 @@ end defs
 
 section ses_iff_inj
 
-lemma ses_of_inj (H : module.flat.inj R M) :  module.flat.ses R M := λ N1 N2 N3 l12 l23 he1 he2 he3,
-begin 
-  have inj1 : function.injective (tensor_product.map l12 linear_map.id),
-  { rw ←mono_iff_exact_zero_left at he1,
-    rw concrete_category.mono_iff_injective_of_preserves_pullback at he1,
-    exact H l12 he1, },
+lemma ses_of_inj (H : module.flat.inj R M) :  module.flat.ses R M := -- λ N1 N2 N3 l12 l23 he1 he2 he3,
+{ map_exact := 
+  begin 
+    rintros ⟨N1, N2, N3, l12, l23⟩ ⟨he1, he2, he3⟩,
+    dsimp only at *,
+    have inj1 : function.injective (tensor_product.map l12 linear_map.id),
+    { rw ←mono_iff_exact_zero_left at he1,
+      rw concrete_category.mono_iff_injective_of_preserves_pullback at he1,
+      exact H l12 he1, },
   
-  have res := @@tensor_product.right_exact R _ M _ _ N1 N2 N3 l12 l23 he2 he3,
-  refine ⟨_, res⟩,
-  { rw ←mono_iff_exact_zero_left,
-    rwa concrete_category.mono_iff_injective_of_preserves_pullback, },
-end
+    obtain ⟨e1, e2⟩ := @@tensor_product.right_exact R _ M _ _ N1 N2 N3 l12 l23 he2 he3,
+    refine ⟨_, e1, e2⟩,
+    { rw ←mono_iff_exact_zero_left,
+      rwa concrete_category.mono_iff_injective_of_preserves_pullback, },
+  end }
 
 lemma inj_of_ses (H : module.flat.ses R M) : module.flat.inj R M := λ N1 N2 l hl, 
 begin 
-  specialize H l (cokernel.π l) _ _ _,
-  { rw ←mono_iff_exact_zero_left,
-    rwa Module.mono_iff_injective, },
+  resetI,
+  obtain ⟨e1, e2, e3⟩ := @@functor.is_exact.map_exact _ _ _ _ H ⟨_, _, _, l, (cokernel.π l)⟩ ⟨_, _, _⟩,
+  { rwa [←mono_iff_exact_zero_left, Module.mono_iff_injective] at e1, },
+  { rwa [←mono_iff_exact_zero_left, Module.mono_iff_injective], },
   { exact abelian.exact_cokernel l, },
-  { exact exact_epi_zero (cokernel.π l), },
-  rw ←mono_iff_exact_zero_left at H,
-  rw Module.mono_iff_injective at H,
-  exact H.1,
+  exact @@exact_epi_zero _ _ _ _ _ _ _,
 end
 
 end ses_iff_inj
@@ -160,8 +145,9 @@ begin
   set g' : (character_module $ B ⊗[R] M) := character_module.hom_equiv _ _ f' with g'_eq,
   obtain ⟨ι, a, m, s, rfl⟩ := tensor_product.exists_rep _ z,
   have EQ : g' (∑ i in s, L (a i) ⊗ₜ m i) = 0,
-  { simp_rw [map_sum, tensor_product.map_tmul, linear_map.id_apply] at hz,
-    rw hz, rw map_zero, },
+  { simp only [tensor_right_map, linear_map.map_sum, monoidal_category.hom_apply, 
+      Module.id_apply] at hz,
+    rw [hz, map_zero], },
   refine hg _,
   rw map_sum,
   simp_rw [map_sum, g'_eq, hom_equiv_apply, add_monoid_hom.coe_to_int_linear_map,
@@ -176,9 +162,6 @@ end
 lemma flat'_of_baer : module.Baer.{u u} R (character_module M) → module.flat.inj R M := 
 λ h, Lambek _ _ $ (module.injective_iff_injective_object.{u u} R 
     (character_module M)).mp (module.Baer.injective h)
-
--- instance aux1 : module R (R →ₗ[R] M) := linear_map.module
--- instance aux2 (I : ideal R) : module R (I →ₗ[R] M) := linear_map.module
 
 lemma flat'_of_surj : 
   (∀ I, function.surjective (restrict_to_ideal R (character_module M) I)) → module.flat.inj R M := 
@@ -227,48 +210,9 @@ begin
   simpa only [linear_map.coe_mk] using h,
 end
 
-namespace exact_of_ses
-
-def ker_iso ⦃N1 N2 N3 : Module.{u} R⦄
-  (l12 : N1 ⟶ N2) (l23 : N2 ⟶ N3) (he : exact l12 l23) :
-  (l23.ker ⊗[R] M)  →ₗ[R] (tensor_product.map l23 linear_map.id : (N2 ⊗[R] M) →ₗ[R] (N3 ⊗[R] M)).ker :=
-tensor_product.lift _
-
-end exact_of_ses
-
 lemma exact_of_ses (H : module.flat.ses R M) :
   module.flat.exact R M :=
-λ N1 N2 N3 l12 l23 he,
-begin 
-  -- intros N1 N2 N3 l12 l23 he,
-  rw exact_iff,
-  have le1 : linear_map.range (tensor_product.map l12 (linear_map.id : M →ₗ[R] _)) ≤ 
-    linear_map.ker (tensor_product.map l23 (linear_map.id : M →ₗ[R] _)),
-  { rintros _ ⟨x, rfl⟩,
-    rw linear_map.mem_ker,
-    rw ←linear_map.comp_apply,
-    rw ←tensor_product.map_comp,
-    change  tensor_product.map (l12 ≫ l23) _ x = 0,
-    rw he.w,
-    refine x.induction_on _ (λ n m, _) _,
-    { simp only [map_zero, linear_map.zero_apply] },
-    { simp only [tensor_product.map_tmul, linear_map.zero_apply, tensor_product.zero_tmul], },
-    { intros x y hx hy,
-      rw [map_add, hx, hy, zero_add], } },
-  refine le_antisymm le1 _,
-  { sorry,
-    -- change linear_map.comp _ _ = 0,
-    -- rw [←tensor_product.map_comp, linear_map.id_comp],
-    -- change tensor_product.map (l12 ≫ l23) _ = 0,  
-    -- rw [he.w],
-    -- refine linear_map.ext (λ z, z.induction_on _ (λ n m, _) _),
-    -- { simp only [map_zero, linear_map.zero_apply] },
-    -- { simp only [tensor_product.map_tmul, linear_map.zero_apply, tensor_product.zero_tmul], },
-    -- { intros x y hx hy,
-    --   rw [map_add, hx, hy, map_add], },
-    },
-end
-
+λ N1 N2 N3 l12 l23 he, functor.map_exact _ _ _ he
 
 lemma inj_of_exact (H : module.flat.exact R M) :
   module.flat.inj R M :=
@@ -279,15 +223,13 @@ begin
     resetI,
     apply exact_zero_left_of_mono, },
   specialize H (0 : (0 : Module.{u} R) ⟶ N1) l e0,
-  have eq1 : (tensor_product.map 0 linear_map.id : 
-    Module.of R ((0 : Module.{u} R) ⊗ M) ⟶ Module.of R (N1 ⊗ M)) = 
+  have eq1 : ((tensor_right (Module.of R M)).map 0) = 
     (_ : Module.of R ((0 : Module.{u} R) ⊗ M) ⟶ 0) ≫ (0 : (0 : Module.{u} R) ⟶ Module.of R (N1 ⊗ M)),
   work_on_goal 3 
   { refine tensor_product.lift 0, },
   { refine linear_map.ext (λ z, z.induction_on _ (λ z m, _) (λ x y hx hy, _)), 
     { simp only [map_zero] },
-    { simp only [tensor_product.map_tmul, tensor_product.lift.tmul, 
-        linear_map.zero_apply, tensor_product.zero_tmul, comp_apply], },
+    { simp only [tensor_right_map, monoidal_preadditive.zero_tensor, comp_zero], },
     { rw [map_add, hx, hy, map_add], }, },
   rw eq1 at H,
   rw abelian.exact_epi_comp_iff at H,
