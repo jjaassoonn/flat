@@ -208,4 +208,40 @@ begin
     exact is_initial.of_unique 0, },
 end
 
+namespace flat
+
+
+lemma equiv_defs : tfae 
+  [ module.flat.ses R M
+  , module.flat.inj R M
+  , module.flat.ideal R M
+  , module.flat.fg_ideal R M
+  , module.flat.exact R M
+  , ∀ (N : Module.{u} R), nonempty (((Tor' (Module.{u} R) 1).obj N).obj M ≅ 0)
+  , ∀ (I : ideal R), nonempty (((Tor' (Module.{u} R) 1).obj (Module.of R (R ⧸ I))).obj M ≅ 0)
+  , ∀  (I : ideal R) (hI : I.fg), 
+    nonempty (((Tor' (Module.{u} R) 1).obj (Module.of R (R ⧸ I))).obj M ≅ 0)
+  , ∀ (n : ℕ) (hn : 0 < n) (N : Module.{u} R), 
+    nonempty (((Tor' (Module.{u} R) n).obj N).obj M ≅ 0)] :=
+begin 
+  tfae_have : 1 → 2, { apply module.flat.inj_of_ses },
+  tfae_have : 2 → 1, { apply module.flat.ses_of_inj },
+  tfae_have : 3 → 2, { apply module.flat.inj_of_ideal },
+  tfae_have : 4 → 3, { apply module.flat.ideal_of_fg_ideal },
+  tfae_have : 2 → 4, { apply module.flat.fg_ideal_of_inj },
+  tfae_have : 5 → 2, { apply module.flat.inj_of_exact },
+  tfae_have : 1 → 5, { apply module.flat.exact_of_ses },
+  tfae_have : 5 → 6, { intros H N, exact ⟨first_Tor'_zero_of_flat M H N⟩, },
+  tfae_have : 5 → 7, { intros H I, exact ⟨first_Tor'_ideal_zero_of_flat _ H _⟩, },
+  tfae_have : 5 → 8, { intros H I hI, exact ⟨first_Tor'_fg_ideal_zero_of_flat _ H _ hI⟩, },
+  tfae_have : 8 → 4, { intros H, exact flat_of_first_Tor'_fg_ideal_zero _ (λ I hI, (H _ hI).some), },
+  tfae_have : 6 → 7, { intros H I, refine ⟨(H _).some⟩, },
+  tfae_have : 7 → 8, { intros H I hI, exact ⟨(H _).some⟩, },
+  tfae_have : 5 → 9, { intros H n hn, refine λ N, ⟨higher_Tor'_zero_of_flat M H n hn N⟩, },
+  tfae_have : 9 → 6, { intros H N, refine H _ _ _, linarith },
+  tfae_finish,
+end
+
+end flat
+
 end Module
