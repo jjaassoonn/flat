@@ -2,6 +2,8 @@ import category_theory.abelian.exact
 import category_theory.limits.exact_functor
 import algebra.homology.exact
 
+import .lte.for_mathlib.preserves_exact
+
 universes u v
 
 open category_theory.limits
@@ -70,18 +72,30 @@ class functor.is_exact (F : C ⥤ D) : Prop :=
 (map_exact : ∀ (s : pre_ses C), s.is_exact → (s.induced F).is_exact)
 
 @[priority 100]
-instance functor.preserves_finite_limits_of_is_exact (F : C ⥤ D) [F.is_exact] :
+instance functor.preserves_finite_limits_of_is_exact (F : C ⥤ D) [F.is_exact] [F.additive] :
   preserves_finite_limits F :=
 sorry
 
 @[priority 100]
-instance functor.preserves_finite_colimits_of_is_exact (F : C ⥤ D) [F.is_exact] :
+instance functor.preserves_finite_colimits_of_is_exact (F : C ⥤ D) [F.is_exact] [F.additive] :
   preserves_finite_colimits F :=
 sorry
 
 instance functor.is_exact_of_preserves_finite_limits_and_colimits (F : C ⥤ D)
-  [preserves_finite_limits F] [preserves_finite_colimits F] : F.is_exact :=
-sorry
+  [preserves_finite_limits F] [preserves_finite_colimits F] [F.additive] : F.is_exact :=
+{ map_exact := λ s hs, 
+  begin 
+    haveI e1 : mono s.lm,
+    { rw mono_iff_exact_zero_left, exact hs.exact1, },
+    haveI e2 : epi s.mr,
+    { rw epi_iff_exact_zero_right, exact hs.exact3, },
+    haveI e3 : exact s.lm s.mr,
+    { exact hs.exact2 },
+    obtain ⟨h⟩ := functor.map_short_exact F s.lm s.mr ⟨e3⟩,
+    refine ⟨_, h, _⟩,
+    { rw ←mono_iff_exact_zero_left, exact mono, },
+    { rw ←epi_iff_exact_zero_right, exact epi,  },
+  end }
 
 variables (C)
 @[derive [category]]

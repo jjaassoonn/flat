@@ -6,11 +6,11 @@ import .adjunction_general
 
 universes u v
 
-open category_theory
-open_locale tensor_product zero_object
+open category_theory category_theory.monoidal_category
 
 namespace tensor_product
 
+open_locale tensor_product zero_object
 variables (R : Type u) [comm_ring R]
 variables (M : Type v) [add_comm_group M] [module R M]
 variables (A B C : Module.{v} R)
@@ -33,7 +33,7 @@ A ⊗ M --> B ⊗ M ---> C ⊗ M ----> 0
 is exact
 -/
 
-section
+section  
 
 include fBC eC0
 
@@ -224,3 +224,10 @@ lemma right_exact :
 end, by exactI @@right_exact.at3 R _ M _ _ B C fBC eC0⟩
 
 end tensor_product
+
+noncomputable instance (R : Type u) [comm_ring R] (M : Module.{u} R) : limits.preserves_finite_colimits (tensor_right M) := 
+begin 
+  haveI : limits.preserves_colimits_of_shape limits.walking_parallel_pair (tensor_right M),
+  { sorry },
+  refine category_theory.functor.preserves_finite_colimits_of_preserves_cokernels _,
+end

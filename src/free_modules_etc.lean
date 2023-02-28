@@ -2,6 +2,8 @@ import algebra.category.Module.projective
 import linear_algebra.free_module.basic
 import category_theory.monoidal.tor
 
+import .lte.for_mathlib.derived_functor_zero
+
 import .flat
 
 open category_theory category_theory.limits category_theory.monoidal_category
@@ -46,6 +48,10 @@ instance from_afree_epi : epi M.from_afree :=
   Module.from_afree _ ≫ kernel.ι _⟩ $ λ n P, 
 ⟨P.2.1, (kernel P.2.2.2).afree, ⟨P.2.2.1.2, Module.afree_is_free _⟩, Module.from_afree _ ≫ kernel.ι _⟩
 
+lemma free_res.chain_complex.Xd_aux_0 (X : Module.{u} R) :
+  free_res.chain_complex.Xd_aux X 0 = 
+  ⟨X.afree, (kernel X.from_afree).afree, ⟨Module.afree_is_free _, Module.afree_is_free _⟩, 
+    Module.from_afree _ ≫ kernel.ι _⟩ := rfl
 
 @[reducible] def free_res.chain_complex.X' (n : ℕ) : Module.{u} R :=
 (free_res.chain_complex.Xd_aux M n).1
@@ -153,13 +159,53 @@ def first_Tor'_fg_ideal_zero_of_flat (h : module.flat.exact R M) :
     ((Tor' (Module.{u} R) 1).obj (Module.of R (R ⧸ I))).obj M ≅ 0 :=
 λ _ _, M.first_Tor'_zero_of_flat h _
 
--- needs long exact sequences
+def ses_of_ideal (I : ideal R) : short_exact_sequence (Module.{u} R) :=
+{ fst := Module.of R I,
+  snd := Module.of R R,
+  trd := Module.of R (R ⧸ I),
+  f := Module.of_hom ⟨coe, λ _ _, rfl, λ _ _, rfl⟩,
+  g := submodule.mkq I,
+  mono' := 
+  begin 
+    rw mono_iff_injective,
+    rintros x y h,
+    ext,
+    exact h,
+  end,
+  epi' := 
+  begin 
+    rw epi_iff_surjective,
+    exact submodule.mkq_surjective _,
+  end,
+  exact' := 
+  begin
+    rw exact_iff,
+    rw submodule.ker_mkq,
+    ext1 (x : R),
+    split,
+    { rintros ⟨x, rfl⟩,
+      exact x.2, },
+    { rintros hx, refine ⟨⟨x, hx⟩, rfl⟩ },
+  end }
+
 def flat_of_first_Tor'_fg_ideal_zero (h : ∀  (I : ideal R) (hI : I.fg), 
   ((Tor' (Module.{u} R) 1).obj (Module.of R (R ⧸ I))).obj M ≅ 0) :
   module.flat.fg_ideal R M :=
 λ I hI, 
 begin 
-  sorry
+  have exact1 : exact_seq (Module.{u} R) [_, _] := (category_theory.abelian.functor.seven_term_exact_seq (tensor_right M) 
+    (ses_of_ideal I)).extract 2 2,
+  rw [←exact_iff_exact_seq] at exact1,
+  convert_to function.injective ((tensor_right M).map (ses_of_ideal I).f),
+  rw [←mono_iff_injective, mono_iff_exact_zero_left],
+  refine exact_iso_comp.mp _,
+  { exact ((tensor_right M).left_derived (0 + 1)).obj (ses_of_ideal I).trd },
+  { specialize h I hI, exact h.hom, },
+  { exact is_iso_of_op (h I hI).hom, },
+  { convert exact1 using 1,
+    apply is_initial.hom_ext,
+    refine is_initial.of_iso _ (h I hI).symm,
+    exact is_initial.of_unique 0, },
 end
 
 end Module
