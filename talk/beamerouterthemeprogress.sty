@@ -1,0 +1,111 @@
+\makeatletter
+
+\AtBeginSection[]{\frame{\sectionpage}}
+\AtBeginSubsection[]{\frame{\subsectionpage}}
+
+\newcommand{\my@bigsize}{9}
+\newcommand{\my@medsize}{7}
+\newcommand{\my@smallsize}{5}
+
+\newlength{\my@tempsize}
+
+\newcounter{my@sectnum}
+
+\newcommand{\my@lastdigit}[1]{%
+  \loop\ifnum\value{#1}>9\addtocounter{#1}{-10}\repeat
+  \arabic{#1}%
+}
+
+\newcommand\my@fixedbox[2]{%
+  \makebox[#1]{\rule[-1ex]{0pt}{3.25ex}#2}%
+}
+
+\newcommand\my@colorbox[3]{%
+  {\setlength{\fboxsep}{0pt}\colorbox{#1}{\my@fixedbox{#2}{#3}}}%
+}
+
+\def\my@temptext{}
+
+\newcommand{\my@navbox}[1][]{%
+  \if\relax\detokenize{#1}\relax
+    \def\my@tempbox{\my@fixedbox}%
+  \else
+    \def\my@tempbox{\my@colorbox{#1}}%
+  \fi
+  \ifx\my@box\my@bigbox
+    \def\my@temptext{\my@lastdigit{my@sectnum}}%
+  \fi
+  \ifx\my@box\my@medbox
+    \def\my@temptext{$\diamond$}%
+  \fi
+  \ifx\my@box\my@smallbox
+    \def\my@temptext{$-$}%
+  \fi
+  \my@tempbox{\my@tempsize}{\my@temptext}%
+}
+
+\defbeamertemplate{navigation box}{home}{%
+  \setlength{\my@tempsize}{\my@box@size pt}%
+  \my@colorbox{gray!60}{\my@tempsize}{$\equiv$}%
+}
+
+\defbeamertemplate{navigation box}{done}{%
+  \setlength{\my@tempsize}{\my@box@size pt}%
+  \my@navbox[gray!60]%
+}
+
+\defbeamertemplate{navigation box}{todo}{%
+  \setlength{\my@tempsize}{\my@box@size pt}%
+  \my@navbox
+}
+
+\newcommand{\my@bigbox}{\global\let\my@box@size=\my@bigsize\usebeamertemplate{navigation box}}
+\newcommand{\my@medbox}{\global\let\my@box@size=\my@medsize\usebeamertemplate{navigation box}}
+\newcommand{\my@smallbox}{\global\let\my@box@size=\my@smallsize\usebeamertemplate{navigation box}}
+
+\renewcommand{\sectionentry}[5]{\global\let\my@box=\my@bigbox\setcounter{my@sectnum}{#1}}
+\renewcommand{\beamer@subsectionentry}[5]{\global\let\my@box=\my@medbox}
+
+\renewcommand{\slideentry}[6]{%
+  \def\my@temp@i{1/1}%
+  \def\my@temp@ii{#4}%
+  \ifx\my@temp@i\my@temp@ii % title page
+    \setbeamertemplate{navigation box}[home]%
+  \else
+    \setbeamertemplate{navigation box}[done]%
+  \fi
+  \ifnum\c@section<#1%
+    \setbeamertemplate{navigation box}[todo]%
+  \else
+    \ifnum\c@section=#1\ifnum\c@subsection<#2%
+      \setbeamertemplate{navigation box}[todo]%
+    \else
+      \ifnum\c@subsection=#2\ifnum\c@subsectionslide<#3%
+        \setbeamertemplate{navigation box}[todo]%
+      \fi\fi
+    \fi\fi
+  \fi
+  \ifx\my@temp@i\my@temp@ii % title page
+    \beamer@link(#4){\my@bigbox}%
+  \else
+    \beamer@link(#4){\my@box}%
+  \fi
+  \global\let\my@box=\my@smallbox
+}
+
+\defbeamertemplate{footline}{progress}
+{%
+  {\color{gray}\hrule}\hbox{%
+  \begin{beamercolorbox}[wd=.8\paperwidth,ht=2.25ex,dp=1ex,left]{footline}%
+    \kern2em\dohead
+  \end{beamercolorbox}%
+  \begin{beamercolorbox}[wd=.2\paperwidth,ht=2.25ex,dp=1ex,right]{footline}%
+    \insertframenumber{}/\inserttotalframenumber\kern2em
+  \end{beamercolorbox}%
+  }%
+}
+
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}[progress]
+
+\makeatother

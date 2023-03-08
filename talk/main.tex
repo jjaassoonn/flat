@@ -1,0 +1,907 @@
+%
+\documentclass[aspectratio=169]{beamer}
+
+\useoutertheme{progress}
+
+\usepackage{tikz-cd}
+\usepackage{amsthm}
+\usepackage{amsmath}
+\usepackage{xcolor}
+\usepackage{faktor}
+\usepackage{rotating}
+\usepackage{listings}
+\usepackage{multirow}
+\usepackage{array}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{upquote}
+\usepackage{color}
+\definecolor{keywordcolor}{rgb}{0.7, 0.1, 0.1}   % red
+\definecolor{tacticcolor}{rgb}{0.0, 0.1, 0.6}    % blue
+\definecolor{commentcolor}{rgb}{0.4, 0.4, 0.4}   % grey
+\definecolor{symbolcolor}{rgb}{0.0, 0.1, 0.6}    % blue
+\definecolor{sortcolor}{rgb}{0.1, 0.5, 0.1}      % green
+\definecolor{attributecolor}{rgb}{0.7, 0.1, 0.1} % red
+
+\lstdefinestyle{mystyle}{
+  % frame=tb,
+  basicstyle={\ttfamily\TINY},
+  breakatwhitespace=false,         
+  breaklines=true,                 
+  captionpos=b,                    
+  keepspaces=true,                 
+  % numbers=left,                    
+  % numbersep=5pt,                  
+  showspaces=false,                
+  showstringspaces=false,
+  showtabs=false,                  
+  tabsize=2
+}
+
+\lstset{style=mystyle}
+
+\def\lstlanguagefiles{lstlean.tex}
+% set default language
+\lstset{language=lean}
+
+\usetikzlibrary{decorations.pathmorphing}
+\usetikzlibrary{tikzmark,calc}
+
+\title{Flat Modules}
+\author{Jujian Zhang}
+\date{}
+
+\begin{document}
+
+
+\begin{frame}
+\titlepage
+\end{frame}
+
+\section*{Definition}
+\begin{frame}[fragile]
+\frametitle{Right Exactness}
+
+\begin{equation*}
+\frametitle{$-\otimes M$ is always right exact}
+\begin{tikzcd}
+  0 \arrow[r]                  & A \arrow[r, "f"]                     & B \arrow[r, "g"]
+                               & C \arrow[r]                          & 0 \\
+  \color{red} 0 \arrow[r, red] & A \otimes_R M \arrow[r, "f \otimes 1"] & B \otimes_R M \arrow[r, "g \otimes 1"]
+                               & C \otimes_R M \arrow[r]                & 0
+\end{tikzcd}
+\end{equation*}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{...but not always left exact}
+For example $\mathbb{Z}/(2)$ as an $\mathbb{Z}$-module
+\begin{equation*}
+\begin{tikzcd}
+  0 \arrow[r] & \mathbb{Z} \arrow[r, "\times 2"] & \mathbb{Z} \arrow[r] & \mathbb{Z}/(2) \arrow[r] & 0 \\
+\end{tikzcd}      
+\end{equation*}
+gives
+\begin{equation*}
+\begin{tikzcd}
+  0 \arrow[r, squiggly] 
+    & \mathbb{Z}\otimes_\mathbb{Z}\mathbb{Z}/(2) \arrow[r] 
+      \arrow[d, dash, "\rotatebox{90}{$\cong$}"'] & 
+    \mathbb{Z}\otimes_\mathbb{Z}\mathbb{Z}/(2) \arrow[r]
+      \arrow[d, dash, "\rotatebox{90}{$\cong$}"'] &
+    \mathbb{Z}\otimes_\mathbb{Z}\mathbb{Z}/(2) \arrow[r]
+      \arrow[d, dash, "\rotatebox{90}{$\cong$}"'] & 0 \\
+  0 \arrow[r, squiggly] & \mathbb{Z}/(2) \arrow[r, "0"] & \mathbb{Z}/(2) \arrow[r]
+    & \mathbb{Z}/(2) \arrow[r] & 0
+\end{tikzcd}
+\end{equation*}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{When is tensoring exact?}
+% \begin{definition}[flat modules] An $R$-module $M$ is flat if $-\otimes_R M$ is 
+%   an exact functor.    
+% \end{definition}
+
+\renewcommand{\arraystretch}{3.5} % Default value: 1
+\begin{tabular}{llr}%
+
+\parbox[h]{.27\textwidth}{$-\otimes_R M~\text{is exact}$} &
+\begin{lstlisting}
+protected def ses : Prop :=
+(tensor_right (Module.of R M)).is_exact
+\end{lstlisting} & (1)   % & 
+\\
+
+% & $\big\Updownarrow$\\
+\parbox[h]{.27\textwidth}{$- \otimes M$ preserves mono} & 
+\begin{lstlisting}
+protected def inj : Prop :=
+∀ ⦃N N' : Module.{u} R⦄ (L : N ⟶ N'), 
+  function.injective L →
+  function.injective 
+    ((tensor_right (Module.of R M)).map L)
+\end{lstlisting} & (2) 
+\\
+
+\parbox[h]{.27\textwidth}{$I\otimes_R M\to R\otimes_R M$ is injective for all ideals $I$} &
+\begin{lstlisting}
+protected def ideal : Prop :=
+∀ (I : ideal R), 
+  function.injective (tensor_embedding M I)
+\end{lstlisting} & (3)  
+\\
+
+\parbox[h]{.27\textwidth}{$I\otimes_R M\to R\otimes_R M$ is injective for all finitely generated ideals $I$} &
+\begin{lstlisting}
+protected def fg_ideal : Prop :=
+∀ (I : ideal R), I.fg → 
+  function.injective (tensor_embedding M I)  
+\end{lstlisting} & (4) 
+\\
+\end{tabular}
+
+\end{frame}
+
+\section*{(4) implies (3)}
+\begin{frame}[fragile]
+\frametitle{(4) implies (3)}
+\begin{minipage}{0.1\textwidth}
+\begin{tikzcd}
+  (1) \arrow[d, Leftrightarrow] \\ 
+  (2) \arrow[d, Rightarrow] \\ 
+  (3) \arrow[d, Rightarrow] \\
+  (4)
+\end{tikzcd}
+\end{minipage}%
+\begin{minipage}{0.9\textwidth}
+Fix an arbitrary ideal $I$.
+The set of all finitely generated subideals of $I$ is directed with respect
+to $\le$, i.e. for any two finitely generated subideals $J, J'$, there
+is another finitely generated subideals larger than both, namely $J \sqcup J'$.
+
+\begin{minipage}{0.45\textwidth}
+\begin{lstlisting}
+@[ext]
+structure fg_subideal :=
+(to_ideal : ideal R)
+(fg : to_ideal.fg)
+(le : to_ideal ≤ I)
+\end{lstlisting}
+\end{minipage}%
+\begin{minipage}{0.45\textwidth}
+\begin{lstlisting}
+instance : is_directed (fg_subideal I) (≤) :=
+{ directed := λ J J', 
+  ⟨⟨J.to_ideal ⊔ J'.to_ideal, submodule.fg.sup J.fg J'.fg, 
+    sorry⟩, sorry⟩ }
+\end{lstlisting}
+\end{minipage}%
+\end{minipage}%
+
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{(4) implies (3)}
+\begin{minipage}{0.1\textwidth}
+\begin{tikzcd}
+  (1) \arrow[d, Leftrightarrow] \\ 
+  (2) \arrow[d, Rightarrow] \\ 
+  (3) \arrow[d, Rightarrow] \\
+  (4)
+\end{tikzcd}
+\end{minipage}%
+\begin{minipage}{0.9\textwidth}
+\begin{lemma}[ideal as colimit of finitely generated subideals]
+  \[I \cong \operatornamewithlimits{colim}_{J\le I} J\]
+  where $J$ runs over all finitely generated subideals.
+\end{lemma}
+\begin{proof}
+By using universal property of colimit over directed system,
+$\operatornamewithlimits{colim}_{J} J \to I$ can be realised by lifting
+the obvious linear map $J \to I$.
+For the other direction, if $i \in I$, then the principal subideal 
+$\left\langle i\right\rangle$ is finitely generated, so there is a
+map $\left\langle i\right\rangle\to \operatorname{colim}_{J} J$.
+\end{proof}
+
+\begin{corollary}
+  \[
+    I \otimes M \cong \left(\operatorname{colim}_{J \le I} J\right) \otimes_R M
+  \]
+\end{corollary}
+
+\end{minipage}%
+
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{(4) implies (3)}
+\begin{minipage}{0.1\textwidth}
+\begin{tikzcd}
+  (1) \arrow[d, Leftrightarrow] \\ 
+  (2) \arrow[d, Rightarrow] \\ 
+  (3) \arrow[d, Rightarrow] \\
+  (4)
+\end{tikzcd}
+\end{minipage}%
+\begin{minipage}{0.9\textwidth}
+\begin{lstlisting}
+def as_direct_limit :=
+module.direct_limit (λ (i : fg_subideal I), i.to_ideal) $ 
+  λ i j hij, (submodule.of_le hij : i.to_ideal →ₗ[R] j.to_ideal)
+
+def from_as_direct_limit :
+  I.as_direct_limit →ₗ[R] I :=
+module.direct_limit.lift R _ _ _ (λ i, submodule.of_le i.le) $ 
+  λ i j hij r, rfl
+
+@[simps]
+def to_as_direct_limit :
+  I →ₗ[R] I.as_direct_limit :=
+{ to_fun := λ r, 
+    module.direct_limit.of R (fg_subideal I) (λ i, i.to_ideal) 
+      (λ _ _ h, submodule.of_le h) (principal_fg_subideal r) 
+      ⟨r, mem_principal_fg_subideal r⟩,
+  ..sorry }
+\end{lstlisting}
+\end{minipage}%
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{(4) implies (3)}
+\begin{minipage}{0.1\textwidth}
+\begin{tikzcd}
+  (1) \arrow[d, Leftrightarrow] \\ 
+  (2) \arrow[d, Rightarrow] \\ 
+  (3) \arrow[d, Rightarrow] \\
+  (4)
+\end{tikzcd}
+\end{minipage}%
+\begin{minipage}{0.9\textwidth}
+\begin{lemma}
+  colimits over direct system commutes with tensor.
+\end{lemma}
+\begin{proof}
+Consider $\left(\operatorname{colim}_{i\in \mathcal{I}} i\right) \otimes_R M$ and 
+$\operatorname{colim}_{i\in\mathcal{I}}\left(i\otimes_R M\right)$.
+The forward direction is done by using universal property of tensor product,
+we construct a bilinear map $\left(\operatorname{colim}_{i\in \mathcal{I}} i\right)\to M \to\operatorname{colim}_{i\in\mathcal{I}}\left(i\otimes_R M\right)$:
+for each $i\in\mathcal{I}$ and $x \in i$, there is a map 
+$\begin{tikzcd}
+M \ar[r, "-\otimes x"] & M \otimes i \ar[r] & \operatorname{colim}_{i\in\mathcal{I}}\left(i\otimes_R M\right)
+\end{tikzcd}$. The other direction is by descending the family of maps 
+$i \otimes_R M \to \left(\operatorname{colim}_{i\in \mathcal{I}} i\right) \otimes_R M$ for all $i \in \mathcal{I}$.
+\end{proof}
+
+\begin{corollary}
+\[
+  I \otimes M \cong \operatorname{colim}_{J \le I} \left(J\otimes_R M\right).
+\]
+\end{corollary}
+
+\end{minipage}%
+
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{(4) implies (3)}
+\begin{minipage}{0.1\textwidth}
+\begin{tikzcd}
+  (1) \arrow[d, Leftrightarrow] \\ 
+  (2) \arrow[d, Rightarrow] \\ 
+  (3) \arrow[d, Rightarrow] \\
+  (4)
+\end{tikzcd}
+\end{minipage}%
+\begin{minipage}{0.9\textwidth}
+\begin{lstlisting}
+def direct_limit_of_tensor_product_to_tensor_product_with_direct_limit : 
+  direct_limit (λ i, G i ⊗[R] M) 
+    (λ i j hij, tensor_product.map (f _ _ hij) (linear_map.id)) →ₗ[R] (direct_limit G f) ⊗[R] M := 
+direct_limit.lift _ _ _ _ (λ i, tensor_product.map (direct_limit.of _ _ _ _ _) linear_map.id) $ 
+λ i j hij z, sorry
+\end{lstlisting}
+\end{minipage}%
+
+\end{frame}
+
+
+
+\begin{frame}[fragile]
+\frametitle{(4) implies (3)}
+\begin{minipage}{0.1\textwidth}
+\begin{tikzcd}
+  (1) \arrow[d, Leftrightarrow] \\ 
+  (2) \arrow[d, Rightarrow] \\ 
+  (3) \arrow[d, Rightarrow] \\
+  (4)
+\end{tikzcd}
+\end{minipage}%
+\begin{minipage}{0.9\textwidth}
+\begin{lstlisting}
+def tensor_product_with_direct_limit_to_direct_limit_of_tensor_product :
+(direct_limit G f) ⊗[R] M →ₗ[R] direct_limit (λ i, G i ⊗[R] M) 
+  (λ i j hij, tensor_product.map (f _ _ hij) (linear_map.id)) :=
+tensor_product.lift $ direct_limit.lift _ _ _ _ (λ i, 
+{ to_fun := λ g, 
+  { to_fun := λ m, direct_limit.of R ι (λ i, G i ⊗[R] M) 
+        (λ i j hij, tensor_product.map (f _ _ hij) (linear_map.id)) i $ g ⊗ₜ m,
+    ..sorry }) ..sorry }
+\end{lstlisting}
+\end{minipage}%
+
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{(4) implies (3)}
+\begin{minipage}{0.1\textwidth}
+\begin{tikzcd}
+  (1) \arrow[d, Leftrightarrow] \\ 
+  (2) \arrow[d, Rightarrow] \\ 
+  (3) \arrow[d, red, Leftrightarrow] \\
+  (4)
+\end{tikzcd}
+\end{minipage}%
+\begin{minipage}{0.9\textwidth}
+It is a calculation away to show that 
+\[
+\begin{tikzcd}
+  I \otimes_R M \arrow[r] \arrow[d, dash, "\cong"] & R \otimes_R M \\
+  \operatorname{colim}_{J \le I} \left(J \otimes_R M\right) \ar[ru, "\bar\iota"]
+\end{tikzcd}
+\]
+where $\bar\iota$ is obtained via the family of maps $J\otimes_R M \to R\otimes_R M$.
+Since each $J\otimes_R M \to R\otimes_R M$ is injective, $\bar\iota$ is injective as well, 
+hence $I\otimes_R M\to R\otimes_R M$ is injective.
+\end{minipage}%
+
+\end{frame}
+
+
+\section*{(3) implies (2)}
+\begin{frame}[fragile]
+\frametitle{(3) implies (2)}
+\begin{minipage}{0.1\textwidth}
+\begin{tikzcd}
+  (1) \arrow[d, Leftrightarrow] \\ 
+  (2) \arrow[d, Rightarrow] \\ 
+  (3) \arrow[d, Leftrightarrow] \\
+  (4)
+\end{tikzcd}
+\end{minipage}%
+\begin{minipage}{0.9\textwidth}
+% Recall that $\mathbb{Q}/\mathbb{Z}$ is an injective $\mathbb{Z}$-module. 
+We define the character module of $M$ to be
+$
+M^* := \operatorname{Hom}_{\mathbb{Z}}(M, \mathbb{Q}/\mathbb{Z}).
+$
+$M^*$ is an $R$-module by $\left(r \bullet f\right)(m) := f(r\bullet m)$.
+Let $L : N \to N'$, then $L^* : N'^* \to N^*$ defined by $L^*:= - \circ L$ 
+makes taking character module a contravariant functor.
+
+\begin{theorem}
+If $L$ is a monomorphism then $L^*$ is an epimorphism.
+\end{theorem}
+\begin{proof}
+Let $g \in N^* = \operatorname{Hom}_{\mathbb{Z}}(N, \mathbb{Q}/\mathbb{Z})$,
+since $\mathbb{Q}/\mathbb{Z}$ is an injective group, $g : N \to \mathbb{Q}/\mathbb{Z}$ 
+factors as
+$
+\begin{tikzcd}
+N \arrow[r, "L"] & N' \arrow[r, "\bar g"] & \mathbb{Q}/\mathbb{Z}
+\end{tikzcd}
+$ so that $L^*(\bar g) = g$.
+\end{proof}
+
+\end{minipage}%
+
+\end{frame}
+
+
+
+
+
+
+\begin{frame}[fragile]
+\frametitle{(3) implies (2)}
+\begin{minipage}{0.1\textwidth}
+\begin{tikzcd}
+  (1) \arrow[d, Leftrightarrow] \\ 
+  (2) \arrow[d, Rightarrow] \\ 
+  (3) \arrow[d, Leftrightarrow] \\
+  (4)
+\end{tikzcd}
+\end{minipage}%
+\begin{minipage}{0.9\textwidth}
+\begin{lstlisting}
+@[derive add_comm_group]
+def rat_circle : Type* :=
+  ulift $ ℚ ⧸ (algebra_map ℤ ℚ).to_add_monoid_hom.range
+
+@[derive add_comm_group]
+def character_module : Type w :=
+M →ₗ[ℤ] rat_circle.{w}
+
+instance character_module.module : module R (character_module M) :=
+{ smul := λ r f, { to_fun := λ m, f (r • m), ..sorry } ..sorry }
+\end{lstlisting}
+\end{minipage}%
+
+\end{frame}
+
+
+
+
+
+
+
+\begin{frame}[fragile]
+\frametitle{(3) implies (2)}
+\begin{minipage}{0.1\textwidth}
+\begin{tikzcd}
+  (1) \arrow[d, Leftrightarrow] \\ 
+  (2) \arrow[d, Rightarrow] \\ 
+  (3) \arrow[d, Leftrightarrow] \\
+  (4)
+\end{tikzcd}
+\end{minipage}%
+\begin{minipage}{0.9\textwidth}
+\begin{theorem}[injective cogenerator]
+For every $M \ni m \ne 0$, there is some $h \in M^*$ such that $h(m)\ne 0$.
+\end{theorem}
+\begin{proof}
+It is sufficient to construct a map $h' : \left\langle m\right\rangle \to 
+\mathbb{Q}/\mathbb{Z}$ such that $h'(m)\ne 0$ by injectivity of $\mathbb{Q}/\mathbb{Z}$.
+Either the additive order of $m$ is finite or infinite:
+\begin{itemize}
+\item If $m$ has finite order $n$, then $h'$ is defined as $k\bullet m \mapsto \frac{k}{n} \mod 1$.
+This is well-defined because if $k\bullet m = k'\bullet m$ then $k - k'\mid n$ thus $\frac{k}{n}\equiv \frac{k'}{n}\mod 1$.
+\item If $m$ has infinite order, then $h'$ is defined as $k\bullet m \mapsto \frac{k}{37}$. In this
+case, it is well defined because the choice of $k$ is unique.
+\end{itemize}
+\end{proof}
+
+\end{minipage}%
+
+\end{frame}
+
+
+
+
+
+
+
+\begin{frame}[fragile]
+\frametitle{(3) implies (2)}
+\begin{minipage}{0.1\textwidth}
+\begin{tikzcd}
+  (1) \arrow[d, Leftrightarrow] \\ 
+  (2) \arrow[d, Rightarrow] \\ 
+  (3) \arrow[d, Leftrightarrow] \\
+  (4)
+\end{tikzcd}
+\end{minipage}%
+\begin{minipage}{0.9\textwidth}
+\begin{lstlisting}
+lemma non_zero {m : M} (hm : m ≠ 0) : ∃ (h : character_module M), h m ≠ 0 :=
+begin 
+  let M' : submodule ℤ M := submodule.span ℤ {m},
+  suffices : ∃ (h' : M' →ₗ[ℤ] rat_circle), h' ⟨m, submodule.subset_span (set.mem_singleton _)⟩ ≠ 0,
+  { sorry },
+  by_cases h_order : add_order_of m ≠ 0,
+  { sorry },
+  { sorry },
+end
+\end{lstlisting}
+\end{minipage}%
+
+\end{frame}
+
+
+
+\begin{frame}[fragile]
+\frametitle{(3) implies (2)}
+\begin{minipage}{0.1\textwidth}
+\begin{tikzcd}
+  (1) \arrow[d, Leftrightarrow] \\ 
+  (2) \arrow[d, Rightarrow] \\ 
+  (3) \arrow[d, Leftrightarrow] \\
+  (4)
+\end{tikzcd}
+\end{minipage}%
+\begin{minipage}{0.9\textwidth}
+\begin{theorem}[Tensor-Hom adjunction]
+Let $R, S$ be two commutative rings and $X$ and $R,S$-bimodule, then
+$-\otimes_R X\dashv \operatorname{Hom}_S(X, -)$, where for $R$-module $Y$, 
+$Y \otimes_R X$ has the $S$-module structure given by $s \bullet (y \otimes x) := y \otimes (s \bullet x)$ 
+and for $S$-module $Z$, $\operatorname{Hom}_S(X, Z)$ has the $R$-module structure
+given by $r \bullet l := x \mapsto l (r \bullet x)$.
+\end{theorem}
+\begin{proof}
+Let $Y$ be an $R$-module and $Z$ an $S$-module. 
+Any $l : Y\otimes X \to Z$ also gives a map $Y\to \operatorname{Hom}_S(X, Z)$
+by $y \mapsto x \mapsto l (y \otimes x)$. Conversely, for any $R$-linear map 
+$l : Y\to \operatorname{Hom}_S(X, Z)$, $y\otimes x \mapsto l(y)(x)$ defines an 
+$S$-linear map.
+\end{proof}
+
+\begin{corollary}
+\[
+  \operatorname{Hom}_R(N, M^*)\cong (N\otimes_R M)^*
+\]
+\end{corollary}
+
+\end{minipage}%
+
+\end{frame}
+
+
+
+
+
+
+
+\begin{frame}[fragile]
+\frametitle{(3) implies (2)}
+\begin{minipage}{0.1\textwidth}
+\begin{tikzcd}
+  (1) \arrow[d, Leftrightarrow] \\ 
+  (2) \arrow[d, Rightarrow] \\ 
+  (3) \arrow[d, Leftrightarrow] \\
+  (4)
+\end{tikzcd}
+\end{minipage}%
+\begin{minipage}{0.9\textwidth}
+\begin{lstlisting}
+@[simps]
+def hom_equiv.inv_fun' {Y : Module.{v} R'} {Z : Module.{v} S'} (l : Y →ₗ[R'] (X' →ₗ[S'] Z)) :
+  ((tensor_functor R' S' X').obj Y ⟶ Z) :=
+{ to_fun := (add_con_gen _).lift (free_add_monoid.lift $ show Y × X' → Z, from λ p, l p.1 p.2) $ 
+    add_con.add_con_gen_le $ λ p p' (h : eqv R' Y X' p p'), _,
+  ..sorry }
+
+def tensor_product.lift {R : Type u_1}  [comm_semiring R]  
+  {M : Type u_4}  {N : Type u_5} {P : Type u_6}  
+  [add_comm_monoid M]  [add_comm_monoid N]  
+  [add_comm_monoid P]  [module R M] 
+  [module R N]  [module R P]  
+  (f : M →ₗ[R] N →ₗ[R] P) : tensor_product R M N →ₗ[R] P
+\end{lstlisting}
+
+\end{minipage}%
+
+\end{frame}
+
+
+
+
+\begin{frame}[fragile]
+\frametitle{(3) implies (2)}
+\begin{minipage}{0.1\textwidth}
+\begin{tikzcd}
+  (1) \arrow[d, Leftrightarrow] \\ 
+  (2) \arrow[d, Rightarrow] \\ 
+  (3) \arrow[d, Leftrightarrow] \\
+  (4)
+\end{tikzcd}
+\end{minipage}%
+\begin{minipage}{0.9\textwidth}
+\begin{theorem}[Lambek]
+If $M^*$ is injective, then $M$ is flat.
+\end{theorem}
+\begin{proof}
+\only<1>{Let $A, B$ be $R$-modules and $L : A \to B$ an injective $R$-linear
+map. If $A\otimes_R M\ni z \ne 0$ is in the kernel of $L\otimes 1$,
+then there would be some $g \in (A\otimes M)^*$ such that $g(z)\ne 0$.
+Let $f : A \to M^*$ be defined as $a \mapsto m \mapsto g(a\otimes m)$,
+since $M^*$ is injective and $L$ is mono, $f$ factors through $f' : B \to M^*$,
+let $g' \in (B\otimes_R M)^*$ be the corresponding map of $f'$ under bijection
+$\operatorname{Hom}_R(B, M^*)\cong (B\otimes_R M)^*$. By writing $z$
+as $\sum_i a_i\otimes m_i$, since $(L\otimes 1)(z) = 0$, we derive
+$g'\left(\sum_i L(a_i)\otimes m_i\right) = g'(0) = 0$}.
+\only<2>{
+\begin{equation*}
+\begin{aligned}
+g'\left(\sum_i L(a_i)\otimes m_i\right) &= \sum_i g'(L(a_i)\otimes m_i)
+  = \sum_i f'(L(a_i))(m_i) \\
+  &= \sum_i f(a_i)(m_i)
+  = \sum_i g(a_i\otimes m_i)  \\
+  &= g\left(\sum_i a_i\otimes m_i\right) 
+  = g(z) \ne 0.
+\end{aligned}
+\end{equation*}
+This is contradiction, thus $z$ must be zero which means $\operatorname{ker}\left(L\otimes 1\right) = 0$.
+}
+\end{proof}
+\end{minipage}%
+
+\end{frame}
+
+
+
+
+
+
+
+
+\begin{frame}[fragile]
+\frametitle{(3) implies (2)}
+\begin{minipage}{0.1\textwidth}
+\begin{tikzcd}
+  (1) \arrow[d, Leftrightarrow] \\ 
+  (2) \arrow[d, red, Leftrightarrow] \\ 
+  (3) \arrow[d, Leftrightarrow] \\
+  (4)
+\end{tikzcd}
+\end{minipage}%
+\begin{minipage}{0.9\textwidth}
+% \begin{corollary}
+% If the restriction map $\operatorname{Hom}_R(R, M^*)\to \operatorname{Hom}_R(I, M^*)$
+% is surjective for all ideals $I$, then $M$ is flat.
+% \end{corollary}
+% \begin{proof}
+% $M^*$ satisfies Baer's criterion, so $M^*$ is injective.
+% \end{proof}
+
+
+
+\begin{corollary}
+If $\iota: I\otimes_R M\to R\otimes_R M$ is injective for all ideals $I$, then
+$M$ is flat.
+\end{corollary}
+\begin{proof}
+By Baer's criterion, it is sufficient to show the restriction map $\operatorname{Hom}_R(R, M^*)\to \operatorname{Hom}_R(I, M^*)$
+is surjective for all ideals $I$. Fix an ideal $I$, let $f : I \to M^*$ corresponding to $f' \in (I\otimes_R M)^*$. Since $\iota$ is injective, $\bar\iota$ is surjective 
+so that there is an $F \in (R\otimes_R M)^*$ such that $\bar\iota(F) = f'$. 
+Then $F$ induces the required $\operatorname{Hom}_R(R, M^*)$.
+\end{proof}
+  
+
+\end{minipage}%
+
+\end{frame}
+
+\section*{Tor definitions}
+
+\begin{frame}[fragile]
+\frametitle{In terms of $\operatorname{Tor}$ functor}
+
+\renewcommand{\arraystretch}{3.5} % Default value: 1
+\begin{tabular}{llr}%
+
+\parbox[h]{.27\textwidth}{$\operatorname{Tor}_i^R(N, M)\cong 0$ for all $R$-modules $N$ and $1 \le i$} &
+\begin{lstlisting}
+∀ (n : ℕ) (hn : 0 < n) (N : Module.{u} R), 
+  nonempty 
+  (((Tor' (Module.{u} R) n).obj N).obj M ≅ 0)
+\end{lstlisting} & (5)   % & 
+\\
+
+% & $\big\Updownarrow$\\
+\parbox[h]{.27\textwidth}{$\operatorname{Tor}_1^R(N, M)\cong 0$ for all $R$-modules $N$} & 
+\begin{lstlisting}
+∀ (N : Module.{u} R), nonempty 
+  (((Tor' (Module.{u} R) 1).obj N).obj M ≅ 0)
+\end{lstlisting} & (6) 
+\\
+% & $\big\Downarrow$ \\
+
+\parbox[h]{.27\textwidth}{$\operatorname{Tor}_1^R(R/I, M)\cong 0$ for all ideals $I$} &
+\begin{lstlisting}
+∀ (I : ideal R), nonempty 
+  (((Tor' (Module.{u} R) 1).obj 
+    (Module.of R (R ⧸ I))).obj M ≅ 0)
+\end{lstlisting} & (6)  
+\\
+% & $\big\Downarrow$ \\
+
+\parbox[h]{.27\textwidth}{$\operatorname{Tor}_1^R(R/I, M)\cong 0$ for all finitely generated ideals $I$} &
+\begin{lstlisting}
+∀ (I : ideal R), nonempty 
+  (((Tor' (Module.{u} R) 1).obj 
+    (Module.of R (R ⧸ I))).obj M ≅ 0)
+\end{lstlisting} & (8)  
+\\
+\end{tabular}
+
+\end{frame}
+
+
+\section*{flatness implies (5)}
+
+\begin{frame}[fragile]
+\frametitle{flatness implies (5)}
+\begin{minipage}{0.1\textwidth}
+\begin{tikzcd}
+  \text{flat} \arrow[d, dashed, Rightarrow] \\ 
+  (5) \arrow[d, Rightarrow] \\ 
+  (6) \arrow[d, Rightarrow] \\
+  (7) \arrow[d, Rightarrow] \\
+  (8)
+\end{tikzcd}
+\end{minipage}%
+\begin{minipage}{0.9\textwidth}
+\begin{theorem}
+The category of $R$-modules has enough free objects.
+\end{theorem}
+\begin{onlyenv}<1>
+\begin{proof}
+Note that $\bigoplus_{M} R$ is a free module. There is a canonical
+surjective map $\bigoplus_{M} R\to M$ whose $M \ni m$-th coordinate
+\end{proof}
+\end{onlyenv}
+
+\begin{onlyenv}<2>
+\begin{lstlisting}
+def afree : Module.{u} R := Module.of R $ ⨁ (m : M), R
+
+def from_afree : M.afree ⟶ M :=
+direct_sum.to_module _ _ _ $ λ m, { to_fun := λ r, r • m ..sorry}
+\end{lstlisting}
+\end{onlyenv}
+
+\begin{onlyenv}<3>
+\begin{corollary} Continuing inductively, the first row is a free resolution.
+$$
+\begin{tikzcd}
+  \cdots \arrow[r] & \bigoplus_{\ker\epsilon} R \arrow[rr] \arrow[rd, two heads] & & \bigoplus_M R \arrow[r, "\epsilon"] & M \\
+  & & \ker\epsilon \arrow[ru, hookrightarrow]& &
+\end{tikzcd}
+$$
+\end{corollary}
+
+
+Using this resolution and the fact that $M$ is flat, we
+see that all higher $\operatorname{Tor}$ vanishes.
+\end{onlyenv}
+
+\end{minipage}
+\end{frame}
+
+
+
+
+
+
+\begin{frame}[fragile]
+\frametitle{flatness implies (5)}
+\begin{minipage}{0.1\textwidth}
+\begin{tikzcd}
+  \text{flat} \arrow[d, red, Rightarrow] \\ 
+  (5) \arrow[d, Rightarrow] \\ 
+  (6) \arrow[d, Rightarrow] \\
+  (7) \arrow[d, Rightarrow] \\
+  (8) 
+\end{tikzcd}
+\end{minipage}%
+\begin{minipage}{0.9\textwidth}
+\begin{lstlisting}
+def free_res.chain_complex.Xd_aux : 
+ℕ → 
+Σ' (N_prev N_next : Module.{u} R) 
+  (h : module.free R N_prev ∧ module.free R N_next), 
+  N_next ⟶ N_prev :=
+@nat.rec 
+  (λ _, Σ' (N_prev N_next : Module.{u} R) 
+    (h : module.free R N_prev ∧ module.free R N_next), 
+    N_next ⟶ N_prev)
+⟨M.afree, (kernel M.from_afree).afree, 
+  ⟨Module.afree_is_free _, Module.afree_is_free _⟩, 
+  Module.from_afree _ ≫ kernel.ι _⟩ $ λ n P, 
+⟨P.2.1, (kernel P.2.2.2).afree, ⟨P.2.2.1.2, Module.afree_is_free _⟩, Module.from_afree _ ≫ kernel.ι _⟩
+\end{lstlisting}
+\end{minipage}%
+
+\end{frame}
+
+\section*{(8) implies flatness}
+
+\begin{frame}[fragile]
+\frametitle{(8) implies flatness}
+\begin{minipage}{0.1\textwidth}
+\begin{tikzcd}
+  \text{flat} \arrow[d, Rightarrow] \\ 
+  (5) \arrow[d, Rightarrow] \\ 
+  (6) \arrow[d, Rightarrow] \\
+  (7) \arrow[d, Rightarrow] \\
+  (8) \arrow[uuuu, dashed, Rightarrow, bend left = 15]
+\end{tikzcd}
+\end{minipage}%
+\begin{minipage}{0.9\textwidth}
+Let $I$ be any finitely generated ideal, consider the exact sequence 
+$$
+\begin{tikzcd}[sep=small]
+0 \ar[r] & I \ar[r] & R \ar[r] & R/I \ar[r] & 0,
+\end{tikzcd}
+$$
+
+\begin{onlyenv}<1>
+\begin{lstlisting}
+def ses_of_ideal (I : ideal R) : short_exact_sequence (Module.{u} R) :=
+{ fst := Module.of R I,
+  snd := Module.of R R,
+  trd := Module.of R (R ⧸ I),
+  f := Module.of_hom ⟨coe, λ _ _, rfl, λ _ _, rfl⟩,
+  g := submodule.mkq I,
+  mono' := sorry,
+  epi' := sorry,
+  exact' := sorry }
+\end{lstlisting}
+\end{onlyenv}
+
+
+\begin{onlyenv}<2>
+it induces
+$$
+\begin{tikzcd}[sep=small]
+  \cdots \ar[r] & \operatorname{Tor}^R_1(R/I, M) \ar[r, "\delta"] & I \otimes_R M \ar[r] &
+    R \otimes_R M \ar[r] & R/I \otimes_R M.
+\end{tikzcd}  
+$$
+\begin{lstlisting}
+def δ₀ (A : short_exact_sequence C) := δ F 0 A ≫ (left_derived_zero_iso_self F).hom.app A.1
+
+lemma seven_term_exact_seq (A : short_exact_sequence C) :
+  exact_seq D [
+    (F.left_derived 1).map A.f, (F.left_derived 1).map A.g,
+    δ₀ F A,
+    F.map A.f, F.map A.g, (0 : F.obj A.3 ⟶ F.obj A.3)]
+\end{lstlisting}
+\end{onlyenv}
+
+\end{minipage}
+\end{frame}
+
+\begin{frame}[fragile]
+
+In particular, 
+$$
+\begin{tikzcd}
+  0 \ar[r] \ar[d, dash, "\cong"] & I \otimes_R M \ar[r] & R \otimes_R M \\
+  \operatorname{Tor}^R_1(R/I, M) \ar[ru, "\delta_0"] & &
+\end{tikzcd}$$ 
+is exact. Since this is true for any finitely generated ideal $I$,
+(8) implies (4). So finally, all definitions are equivalent.
+
+\begin{center}
+\begin{tikzcd}
+  (1) \ar[r, Leftrightarrow] \ar[rrdd, Rightarrow] & (2) \ar[r, Leftrightarrow] & (3) \ar[d, Leftrightarrow] \\
+  (8) \ar[u, Rightarrow] &            & (4) \\
+  (7) \ar[u, Rightarrow] & (6) \ar[l, Rightarrow] & (5) \ar[l, Rightarrow] \\
+\end{tikzcd}
+  
+\end{center}
+\end{frame}
+
+% \begin{frame}
+% \frametitle{In terms of $\operatorname{Tor}$ functor}
+% \begin{definition}
+% For an $R$-module $A$, a projective resolution is an
+% exact sequence $F_{\bullet} \to A$
+% such that $F_{\bullet}$ are all projective modules.
+% Then $\operatorname{Tor}_i^R(A, M)$ is the $i$-th homology
+% group of $F_{\bullet}\otimes_R M$
+% \end{definition}
+% Since the homology of an exact $\begin{tikzcd}X\arrow[r] & Y\arrow[r] & Z\end{tikzcd}$ is zero
+
+% \end{frame}
+
+
+
+
+
+
+
+
+
+
+\end{document}
