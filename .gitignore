@@ -2,3 +2,10 @@
 /_target
 /leanpkg.path
 /.VSCodeCounter
+
+*.ddf
+*.dvi
+*.dvv
+*.synctex.gz
+*.tex.Backup-*
+*.xdv
