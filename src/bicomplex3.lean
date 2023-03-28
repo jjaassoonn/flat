@@ -109,12 +109,24 @@ class has_hadd :=
 notation (name := hadd.add) i `+[` a, b, c`]` j := (has_hadd.add' a b c i j)
 variables [has_hadd a b c]
 
-instance : has_hadd (complex_shape.down ℕ) (complex_shape.down ℕ) (complex_shape.down ℕ) :=
+instance has_hadd_down_nat : has_hadd (complex_shape.down ℕ) (complex_shape.down ℕ) (complex_shape.down ℕ) :=
 { add' := (+),
-  rel_h' := sorry,
-  rel_v' := sorry,
-  add_cancel_h' := sorry,
-  add_cancel_v' := sorry,
+  rel_h' := λ i i' j,
+  begin 
+    dsimp,
+    split,
+    { rintro rfl, ring, },
+    { intros h, linarith, },
+  end,
+  rel_v' := λ i j j',
+  begin 
+    dsimp,
+    split,
+    { rintro rfl, ring, },
+    { intros h, linarith, },
+  end,
+  add_cancel_h' := λ _ _ _, add_left_inj _,
+  add_cancel_v' := λ _ _ _, add_right_inj _,
   squeeze' := λ i j k h1 h2,  
   begin 
     dsimp at h1 h2,
@@ -149,6 +161,37 @@ instance : has_hadd (complex_shape.down ℕ) (complex_shape.down ℕ) (complex_s
       refine ⟨rfl, _⟩,
       rw [nat.succ_eq_add_one],
       ring, },
+  end }
+
+instance has_hadd_up_nat : has_hadd (complex_shape.up ℕ) (complex_shape.up ℕ) (complex_shape.up ℕ) :=
+{ add' := (+),
+  rel_h' := λ i i' j,
+  begin 
+    dsimp,
+    split,
+    { rintro rfl, ring, },
+    { intros h, linarith, },
+  end,
+  rel_v' := λ i j j',
+  begin 
+    dsimp,
+    split,
+    { rintro rfl, ring, },
+    { intros h, linarith, },
+  end,
+  add_cancel_h' := λ _ _ _, add_left_inj _,
+  add_cancel_v' := λ _ _ _, add_right_inj _,
+  squeeze' := λ i j k h1 h2,
+  begin 
+    dsimp at h1 h2,
+    have eq1 : ∀ (k : ℕ), (complex_shape.up ℕ).next k = k + 1,
+    { intros k, 
+      rw complex_shape.next_eq',
+      dsimp,
+      refl, },
+    simp only [eq1] at *,
+    split;
+    linarith,
   end }
 
 variables {a b c} 
