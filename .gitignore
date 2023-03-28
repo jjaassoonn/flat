@@ -9,3 +9,5 @@
 *.synctex.gz
 *.tex.Backup-*
 *.xdv
+
+/doc/miracle_flatness
