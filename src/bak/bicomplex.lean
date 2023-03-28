@@ -2,7 +2,7 @@ import algebra.homology.homological_complex
 import category_theory.abelian.exact
 import algebra.category.Module.abelian
 
-import .test
+import ..test
 
 noncomputable theory
 
