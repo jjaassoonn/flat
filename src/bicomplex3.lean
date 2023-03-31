@@ -6,6 +6,74 @@ import tactic.interval_cases
 
 import .test
 
+/-!
+
+# Collapsing double complex into a single complex
+
+We can consider homological bicomplexes indexed by either natural numbers or integers 
+(or maybe even $\mathbb Z_n$ for shorter complexes) and the arrows can be either up or down 
+(homology or cohomology). Below is an example where the indexing set is integers and arrows are 
+going up (going from smaller number to bigger numbers). We want to collapse a double complex 
+$(C_{i, j}, d_h, d_v)$ into a single complex $\operatorname{Tot}^{\oplus}_k := \bigoplus_{i+j = k}C_{i, j}$ 
+with differential $d^{\oplus} = d_h + d_v$. For this to be a differential, 
+the bicomplex need to have anticommutative squares (i.e. $d_hd_v + d_vd_h = 0$).
+$$
+\begin{CD}
+@. \cdots @.\cdots @.\cdots\\
+@. @VVV @VVV @VVV \\
+\cdots @>>> C_{-1,0} @>{d_h}>>C_{-1, 1} @>{d_h}>> C_{-1, 2} @>>>\cdots\\
+@. @V{d_v}VV @V{d_v}VV @V{d_v}VV\\
+\cdots @>>> C_{0,0} @>{d_h}>> C_{0, 1} @>{d_h}>> C_{0, 2} @>>>\cdots\\
+@. @V{d_v}VV @V{d_v}VV @V{d_v}VV\\
+\cdots @>>> C_{1,0} @>{d_h}>> C_{1, 1} @>{d_h}>> C_{1,2} @>>> \cdots\\
+@. @VVV @VVV @VVV \\
+@. \cdots @. \cdots @. \cdots
+\end{CD}
+$$
+
+The only issue is that we don't want to keep repeating for different indexing sets and different directions of arrows. So we generalize to allow the homological bicomplex to have a row shape $a$ indexed by $\alpha$ and a column shape $b$ indexed by $\beta$. Then we collect $\operatorname{Tot}^{\oplus}$ using a new shape $c$ on $\gamma$. To achieve this, we need a heterogeneous addition function $(+) : \alpha \to \beta \to \gamma$ such that
+
+- for all $i, i' \in \alpha$ and $j \in \beta$, $i \to_a i'$ if and only if $i + j \to_c i' + j$;
+- for all $j, j' \in \beta$ and $i \in \alpha$, $j \to_b j'$ if and only if $i+j\to_c i + j'$;
+- addition is cancellative on both input: $i + j = i' + j$ if and only if $i = i'$ and $i + j = i + j'$ if and only if $j = j'$;
+- if $i+j\to_c k \to_c \operatorname{succ}(i) + \operatorname{succ}(j)$ then $k$ is equal to both $\operatorname{succ}(i) + j$ and $i + \operatorname{succ}(j)$;
+
+and the shapes $a, b, c$ must all be irreflexive. Then the total differential $\bigoplus_{i+j=k}\to \bigoplus_{m+n=k'}$ is defined to be the linear map whose $(i,j)$-th projection is
+$$
+\sum_{m=i~\mathrm{or}~n=j}\left(C_{i,j}\stackrel{D}{\to} C_{m,n}\hookrightarrow\bigoplus_{m+n=k}\right),
+$$
+where
+$$
+D =\left\{
+\begin{aligned}
+d_h & & i = j \\
+d_v & & m = n \\
+0 & & \text{otherwise}
+\end{aligned}\right..
+$$
+
+## Main definitions
+
+- `has_hadd`: the typeclass of heterogeneous addition respecting row shape, column shape and result 
+  shape.
+- `has_sign`: the typeclass allowing a complex shape to act on group by either `1` or `-1` with the
+  constrain that `rel i i'` implies the sign of `i` and `i'` is different.
+- `homological_bicomplex`: a web of the form `α -> β -> C` with rows and columns as complexes and
+  anticommutative squares.
+- `total_at`: (only in category of modules), given bicomplex `{C_ij}`, the `n`-th module of the total 
+  complex is defined to be `⨁_{i + j = n}, C_ij`.
+- `total_d`: (only in category of modules), given bicomplex `{C_ij}`, the linear map 
+  from `⨁_{i + j = n}, C_ij` to `⨁_{i + j = n'}, C_ij` is defined to be the linear map whose 
+  `(i,j)`-th projection is `∑_{i' + j' = n' | i' = i ∨ j' = j} (C_ij ⟶ C_{i', j'} ⟶ ⨁_{p+q = n'} C_pq)`.
+- `total_d_comp_d`: if the resulting shape is irreflexive, then `total_d ≫ total_d` is zero whenever
+  `n, n', n''` are all related
+- `total_d_shape`: if row shape and column shape is irreflexive, then `total_d` is zero whenever 
+  `n, n'` is not related
+- `total_complex`: the total complex of `{C_ij}` by means of direct sum with total differential 
+  `total_d`.
+
+-/
+
 noncomputable theory
 
 universes v u
@@ -192,6 +260,76 @@ instance has_hadd_up_nat : has_hadd (complex_shape.up ℕ) (complex_shape.up ℕ
     simp only [eq1] at *,
     split;
     linarith,
+  end }
+
+def complex_shape.up_fin : Π (m : ℕ), complex_shape (fin m)
+| 0 := 
+{ rel := λ _ _, false,
+  next_eq := λ _ _ _ _ _, fin_zero_elim _,
+  prev_eq := λ _ _ _ _ _, fin_zero_elim _ }
+| 1 := 
+{ rel := λ i j, false,
+  next_eq := λ _ _ _ _ h, h.elim,
+  prev_eq := λ _ _ _ _ h, h.elim }
+| (m+2) := 
+{ rel := λ i j, i.val < m + 1 ∧ i + 1 = j,
+  next_eq := begin 
+    rintros ⟨i, hi1⟩ ⟨j, hj1⟩ ⟨k, hk1⟩ ⟨hi2, hi3⟩ ⟨-, hi3'⟩,
+    rw [← hi3, ← hi3'],
+  end,
+  prev_eq := begin 
+    rintros ⟨i, hi1⟩ ⟨j, hj1⟩ ⟨k, hk1⟩ ⟨hi2, hi3⟩ ⟨hi2', hi3'⟩,
+    have eq1 : (⟨i, hi1⟩ + 1 : fin (m + 2)) = ⟨i+1, by linarith⟩,
+    { ext, rw [fin.coe_add_eq_ite, if_neg],
+      { refl, },
+      { push_neg, dsimp, linarith, } },
+    have eq2 : (⟨j, hj1⟩ + 1 : fin (m + 2)) = ⟨j+1, by linarith⟩,
+    { ext, rw [fin.coe_add_eq_ite, if_neg],
+      { refl, },
+      { push_neg, dsimp, linarith,  } },
+    
+    rw [← hi3', eq1, eq2, fin.eq_iff_veq] at hi3,
+    simp_rw nat.add_right_cancel hi3,
+  end }
+
+example : true := trivial
+
+@[simp] lemma complex_shape.up_fin_zero_rel : (complex_shape.up_fin 0).rel = λ _ _, false := rfl
+@[simp] lemma complex_shape.up_fin_one_rel : (complex_shape.up_fin 1).rel = λ _ _, false := rfl 
+@[simp] lemma complex_shape.up_fin_rel (m : ℕ) : 
+  (complex_shape.up_fin (m + 2)).rel = λ i j, i.val < m + 1 ∧ i + 1 = j := 
+rfl
+
+instance has_hadd_fin (m n : ℕ) : 
+  has_hadd (complex_shape.up_fin (m + 2)) (complex_shape.up_fin (n + 2)) (complex_shape.up_fin (m + n + 5)) :=
+{ add' := λ i j, ⟨i.1 + j.1, begin 
+    have hi := i.2, have hj := j.2,
+    linarith,
+  end⟩,
+  rel_h' := begin 
+    rintros ⟨i₁, hi₁⟩ ⟨i₂, hi₂⟩ ⟨j, hj⟩,
+    dsimp [nat.succ_eq_add_one] at *,
+    generalize_proofs h3 h4,
+    split,
+    { rintros ⟨H1, H2⟩,
+      refine ⟨by linarith, _⟩,
+      sorry },
+    { rintros ⟨H1, H2⟩,
+      refine ⟨_, _⟩,
+      { sorry,
+        /-
+        i₂ = i₁ + 1 < m + 2 so i₁ < m + 1
+        -/
+      },
+      { sorry }, }
+  end,
+  rel_v' := sorry,
+  add_cancel_h' := λ i₁ i₂ j, ⟨sorry, λ h, h ▸ rfl⟩,
+  add_cancel_v' := λ i j₁ j₂, ⟨sorry, λ h, h ▸ rfl⟩,
+  squeeze' := λ i j k h1 h2, 
+  begin 
+    dsimp at h1 h2,
+    sorry
   end }
 
 variables {a b c} 
@@ -1020,7 +1158,9 @@ end
 The total complex associated with a double complex by taking direct sums.
 -/
 @[simps]
-def total_complex (a_ir : a.irrefl) (b_ir : b.irrefl) (c_ir : c.irrefl) [Π (k : γ), decidable_eq (diagonal a b c k)] : homological_complex (Module R) c :=
+def total_complex (a_ir : a.irrefl) (b_ir : b.irrefl) (c_ir : c.irrefl) 
+  [Π (k : γ), decidable_eq (diagonal a b c k)] : 
+  homological_complex (Module R) c :=
 { X := C.total_at c,
   d := λ i j, C.total_d c i j,
   shape' := λ i j hc, C.total_d_shape' c i j a_ir b_ir hc,
