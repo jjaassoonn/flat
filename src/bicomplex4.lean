@@ -931,7 +931,7 @@ lemma total_d_comp_d (k₁ k₂ k₃ : γ)
   (a_ir : a.irrefl) (b_ir : b.irrefl) (c_ir : c.irrefl)
   (hc12 : c.rel k₁ k₂) (hc23 : c.rel k₂ k₃) [∀ k, decidable_eq $ diagonal a b c k] : 
   (C.total_d c k₁ k₂) ≫ (C.total_d c k₂ k₃) = 0 :=
-C.total_d_comp_d' c k₁ k₂ k₃ c_ir hc12 hc23
+C.total_d_comp_d' c k₁ k₂ k₃ a_ir b_ir c_ir hc12 hc23
 
 lemma total_d_shape' (a_ir : a.irrefl) (b_ir : b.irrefl) (hc : ¬ c.rel k k') [Π (k : γ), decidable_eq (diagonal a b c k)] : 
   C.total_d c k k' = 0 :=
